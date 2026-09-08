@@ -3,25 +3,60 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="Zelqon Foods - Attendance & Payroll",
+    page_title="Zelqon Foods - HR & Payroll",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# --- PROFESSIONAL UI STYLING ---
+# --- PROFESSIONAL EXECUTIVE BACKGROUND & UI STYLING ---
 st.markdown(
     """
     <style>
-    .main { background-color: #f4f6f9; }
-    .stButton>button { border-radius: 6px; font-weight: 600; }
-    .stTextInput, .stSelectbox, .stNumberInput { border-radius: 6px; }
-    h1, h2, h3 { color: #1e293b; }
+    /* App background styling */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        color: #1e293b;
+    }
+    
+    /* Transparent header to blend with background */
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0);
+    }
+
+    /* Modern cards, inputs, and button designs */
+    .stButton>button {
+        background-color: #0f766e;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 0.5rem 1.2rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton>button:hover {
+        background-color: #115e59;
+        color: #f8fafc;
+    }
+
+    .stTextInput>div>div>input, 
+    .stNumberInput>div>div>input,
+    .stSelectbox>div>div {
+        border-radius: 8px;
+        background-color: #ffffff;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
     </style>
 """,
     unsafe_allow_html=True,
 )
 
-# --- PASSWORD PROTECTION ---
+# --- PASSWORD AUTHENTICATION ---
 def check_password():
   if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
@@ -29,25 +64,28 @@ def check_password():
   if st.session_state.password_correct:
     return True
 
-  st.markdown("### 🔒 Zelqon Foods - Secure Access")
-  pwd = st.text_input("Enter App Password", type="password")
-  if st.button("Login"):
-    if pwd == "zelqon2026":
-      st.session_state.password_correct = True
-      st.rerun()
-    else:
-      st.error("Incorrect password. Please try again.")
+  col1, col2, col3 = st.columns([1, 2, 1])
+  with col2:
+    st.markdown("### 🔒 Zelqon Foods Portal")
+    st.markdown("Please enter your administrative password to proceed.")
+    pwd = st.text_input("Password", type="password")
+    if st.button("Access Dashboard"):
+      if pwd == "zelqon2026":
+        st.session_state.password_correct = True
+        st.rerun()
+      else:
+        st.error("Incorrect password. Please try again.")
   return False
 
 if not check_password():
   st.stop()
 
-# --- MAIN APP HEADER ---
+# --- DASHBOARD HEADER ---
 st.markdown("## 🌱 Zelqon Foods")
-st.markdown("*Staff Attendance & Payroll System — Fuvahmulah*")
+st.markdown("**Staff Attendance & Monthly Payroll Hub** | *Fuvahmulah*")
 st.markdown("---")
 
-# Initialize session state for staff and attendance records
+# Initialize default team and logs if empty
 if "staff" not in st.session_state:
   st.session_state.staff = pd.DataFrame({
       "Staff ID": ["ZF-001", "ZF-002"],
@@ -66,40 +104,38 @@ if "attendance" not in st.session_state:
       "Notes",
   ])
 
-# --- TABS ---
+# --- NAVIGATION TABS ---
 tab1, tab2, tab3 = st.tabs(
-    ["📅 Daily Attendance", "👥 Staff Management", "💰 Payroll Summary"]
+    ["📅 Attendance Logger", "👥 Staff Directory", "💰 Payroll Summary"]
 )
 
 with tab1:
-  st.markdown("### Log Daily Attendance")
-
+  st.markdown("### Daily Attendance Entry")
   if st.session_state.staff.empty:
-    st.warning(
-        "Please add staff members in the 'Staff Management' tab first."
-    )
+    st.warning("No staff found. Please add members in the Staff Directory tab.")
   else:
     with st.form("attendance_form", clear_on_submit=True):
-      col1, col2 = st.columns(2)
-      with col1:
-        att_date = st.date_input("Date", datetime.date.today())
-      with col2:
+      col_date, col_staff = st.columns(2)
+      with col_date:
+        att_date = st.date_input("Work Date", datetime.date.today())
+      with col_staff:
         selected_staff = st.selectbox(
-            "Select Staff", st.session_state.staff["Name"].tolist()
+            "Select Employee", st.session_state.staff["Name"].tolist()
         )
 
-      col3, col4 = st.columns(2)
-      with col3:
+      col_stat, col_ot = st.columns(2)
+      with col_stat:
         status = st.selectbox(
-            "Status", ["Present", "Half-Day", "Absent (Unpaid)", "Leave (Paid)"]
+            "Attendance Status",
+            ["Present", "Half-Day", "Absent (Unpaid)", "Leave (Paid)"],
         )
-      with col4:
+      with col_ot:
         ot_hours = st.number_input(
-            "Overtime Hours", min_value=0.0, value=0.0, step=0.5
+            "Overtime Hours (OT)", min_value=0.0, value=0.0, step=0.5
         )
 
-      notes = st.text_input("Remarks / Notes", "")
-      submitted = st.form_submit_button("Save Record")
+      notes = st.text_input("Operational Notes / Remarks", "")
+      submitted = st.form_submit_button("Record Entry")
 
       if submitted:
         staff_id = st.session_state.staff.loc[
@@ -116,15 +152,15 @@ with tab1:
         st.session_state.attendance = pd.concat(
             [st.session_state.attendance, new_row], ignore_index=True
         )
-        st.success(f"Attendance recorded for {selected_staff}!")
+        st.success(f"Logged record for {selected_staff} on {att_date}.")
 
-  st.markdown("#### Recent Attendance History")
+  st.markdown("#### Recent Shift Logs")
   if not st.session_state.attendance.empty:
     st.dataframe(
         st.session_state.attendance.sort_values(by="Date", ascending=False),
         use_container_width=True,
     )
-    if st.button("Clear Attendance History"):
+    if st.button("Reset Attendance Records"):
       st.session_state.attendance = pd.DataFrame(
           columns=[
               "Date",
@@ -137,106 +173,108 @@ with tab1:
       )
       st.rerun()
   else:
-    st.info("No attendance logs recorded yet.")
+    st.info("No attendance entries registered yet.")
 
 with tab2:
-  st.markdown("### Current Team Members")
+  st.markdown("### Manage Team & Salaries")
   st.dataframe(st.session_state.staff, use_container_width=True)
 
-  col_add, col_rem = st.columns(2)
+  col_add, col_del = st.columns(2)
 
   with col_add:
-    with st.form("add_staff"):
-      st.markdown("#### Add New Staff")
-      new_name = st.text_input("Staff Name")
-      new_salary = st.number_input("Monthly Salary (MVR)", value=3000.0)
-      add_btn = st.form_submit_button("Add Member")
-      if add_btn and new_name:
-        new_id = f"ZF-00{len(st.session_state.staff) + 1}"
-        temp_df = pd.DataFrame({
-            "Staff ID": [new_id],
-            "Name": [new_name],
-            "Base Salary (MVR)": [new_salary],
+    with st.form("add_member_form", clear_on_submit=True):
+      st.markdown("#### Add New Team Member")
+      name_to_add = st.text_input("Full Name")
+      salary_to_add = st.number_input("Monthly Salary (MVR)", value=3000.0)
+      add_btn = st.form_submit_button("Register Staff")
+      if add_btn and name_to_add:
+        generated_id = f"ZF-00{len(st.session_state.staff) + 1}"
+        new_member = pd.DataFrame({
+            "Staff ID": [generated_id],
+            "Name": [name_to_add],
+            "Base Salary (MVR)": [salary_to_add],
             "Standard Monthly Days": [26],
         })
         st.session_state.staff = pd.concat(
-            [st.session_state.staff, temp_df], ignore_index=True
+            [st.session_state.staff, new_member], ignore_index=True
         )
-        st.success(f"Added {new_name} successfully!")
+        st.success(f"Registered {name_to_add} under {generated_id}.")
         st.rerun()
 
-  with col_rem:
-    with st.form("remove_staff"):
+  with col_del:
+    with st.form("remove_member_form"):
       st.markdown("#### Remove Staff Member")
       if not st.session_state.staff.empty:
-        staff_to_remove = st.selectbox(
-            "Select Staff to Remove", st.session_state.staff["Name"].tolist()
+        to_delete = st.selectbox(
+            "Select Staff to Delete", st.session_state.staff["Name"].tolist()
         )
-        remove_btn = st.form_submit_button("Remove Member")
-        if remove_btn:
+        delete_btn = st.form_submit_button("Delete Member")
+        if delete_btn:
           st.session_state.staff = st.session_state.staff[
-              st.session_state.staff["Name"] != staff_to_remove
+              st.session_state.staff["Name"] != to_delete
           ].reset_index(drop=True)
-          st.success(f"Removed {staff_to_remove}!")
+          st.success(f"Removed {to_delete} from active staff.")
           st.rerun()
       else:
-        st.info("No staff to remove.")
-        st.form_submit_button("Remove Member", disabled=True)
+        st.info("No active staff to remove.")
+        st.form_submit_button("Delete Member", disabled=True)
 
 with tab3:
-  st.markdown("### Monthly Payroll & Settlement Summary")
+  st.markdown("### Monthly Payroll Calculation")
 
   if st.session_state.attendance.empty:
-    st.warning("Log attendance records in Tab 1 to generate payroll totals.")
+    st.warning("Log daily attendance in Tab 1 to compute monthly payroll.")
   else:
     df_att = st.session_state.attendance.copy()
 
-    def get_day_value(status):
-      if status == "Present" or status == "Leave (Paid)":
+    def get_day_val(status_val):
+      if status_val in ["Present", "Leave (Paid)"]:
         return 1.0
-      elif status == "Half-Day":
+      elif status_val == "Half-Day":
         return 0.5
       return 0.0
 
-    df_att["Day_Value"] = df_att["Status"].apply(get_day_value)
+    df_att["Day_Value"] = df_att["Status"].apply(get_day_val)
+    payroll_summary = []
 
-    summary_list = []
-    for index, row in st.session_state.staff.iterrows():
+    for _, row in st.session_state.staff.iterrows():
       s_id = row["Staff ID"]
       s_name = row["Name"]
       base_sal = row["Base Salary (MVR)"]
       std_days = row["Standard Monthly Days"]
 
-      staff_logs = df_att[df_att["Staff ID"] == s_id]
-      days_worked = staff_logs["Day_Value"].sum()
-      total_ot = staff_logs["Overtime Hours"].sum()
+      staff_records = df_att[df_att["Staff ID"] == s_id]
+      days_worked = staff_records["Day_Value"].sum()
+      total_ot = staff_records["Overtime Hours"].sum()
 
+      # Overtime formula: (Base / Std Days / 8 hrs) * 1.25 multiplier
       hourly_rate = (base_sal / std_days) / 8
-      ot_pay = total_ot * hourly_rate * 1.25
+      ot_amount = total_ot * hourly_rate * 1.25
 
+      # Pro-rated base calculation for unexcused absence
       effective_base = base_sal
       if days_worked < std_days and std_days > 0:
         effective_base = (base_sal / std_days) * days_worked
 
-      net_pay = effective_base + ot_pay
+      total_net = effective_base + ot_amount
 
-      summary_list.append({
+      payroll_summary.append({
           "Staff ID": s_id,
           "Name": s_name,
           "Base Salary (MVR)": base_sal,
-          "Days Logged": days_worked,
+          "Days Worked": days_worked,
           "Total OT Hours": total_ot,
-          "OT Pay (MVR)": round(ot_pay, 2),
-          "Calculated Net Pay (MVR)": round(net_pay, 2),
+          "OT Pay (MVR)": round(ot_amount, 2),
+          "Net Payout (MVR)": round(total_net, 2),
       })
 
-    summary_df = pd.DataFrame(summary_list)
+    summary_df = pd.DataFrame(payroll_summary)
     st.dataframe(summary_df, use_container_width=True)
 
-    csv = summary_df.to_csv(index=False).encode("utf-8")
+    csv_data = summary_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Download Monthly Payroll Report (CSV)",
-        data=csv,
-        file_name=f"zelqon_payroll_{datetime.date.today().strftime('%Y-%m')}.csv",
+        label="📥 Export Monthly Payroll (CSV)",
+        data=csv_data,
+        file_name=f"zelqon_payroll_{datetime.date.today().strftime('%Y_%m')}.csv",
         mime="text/csv",
     )
