@@ -53,7 +53,7 @@ with tab1:
     col4, col5 = st.columns(2)
     with col4:
       ot_hours = st.number_input(
-          "Overtime Hours (if any)", min_format=0.0, value=0.0, step=0.5
+          "Overtime Hours (if any)", min_value=0.0, value=0.0, step=0.5
       )
     with col5:
       notes = st.text_input("Notes / Remarks", "")
