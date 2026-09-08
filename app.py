@@ -1,4 +1,5 @@
 import datetime
+from fpdf import FPDF
 import pandas as pd
 import streamlit as st
 
@@ -19,7 +20,6 @@ st.markdown(
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Main canvas background */
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
         color: #0f172a;
@@ -30,7 +30,6 @@ st.markdown(
         backdrop-filter: blur(8px);
     }
 
-    /* Top Brand Hero Banner */
     .brand-hero {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #ffffff;
@@ -53,7 +52,6 @@ st.markdown(
         margin: 4px 0 0 0;
     }
 
-    /* Form and Content Cards */
     [data-testid="stForm"] {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -62,7 +60,6 @@ st.markdown(
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    /* Input Fields */
     .stTextInput>div>div>input,
     .stNumberInput>div>div>input,
     .stSelectbox>div>div {
@@ -70,13 +67,7 @@ st.markdown(
         border: 1px solid #cbd5e1 !important;
         font-size: 0.92rem !important;
     }
-    .stTextInput>div>div>input:focus,
-    .stNumberInput>div>div>input:focus {
-        border-color: #0d9488 !important;
-        box-shadow: 0 0 0 1px #0d9488 !important;
-    }
 
-    /* Primary Buttons */
     .stButton>button {
         background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
         color: #ffffff !important;
@@ -85,16 +76,13 @@ st.markdown(
         border-radius: 8px;
         border: none;
         padding: 0.55rem 1.4rem;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 1px 3px rgba(13, 148, 136, 0.3);
     }
     .stButton>button:hover {
         background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
         box-shadow: 0 4px 8px rgba(13, 148, 136, 0.4);
-        transform: translateY(-1px);
     }
 
-    /* Tab Navigation */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #e2e8f0;
@@ -114,7 +102,6 @@ st.markdown(
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    /* Metric Cards */
     [data-testid="stMetric"] {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
@@ -127,7 +114,6 @@ st.markdown(
         font-weight: 600;
         font-size: 0.8rem !important;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
     }
     [data-testid="stMetricValue"] {
         color: #0f172a !important;
@@ -138,6 +124,118 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# --- PDF GENERATION ENGINE ---
+def generate_payslip_pdf(record, period_label):
+  pdf = FPDF()
+  pdf.add_page()
+  pdf.set_auto_page_break(auto=True, margin=15)
+
+  # Top Banner
+  pdf.set_fill_color(15, 23, 42)
+  pdf.rect(0, 0, 210, 32, "F")
+
+  pdf.set_text_color(255, 255, 255)
+  pdf.set_font("Helvetica", "B", 18)
+  pdf.set_xy(10, 8)
+  pdf.cell(0, 8, "ZELQON FOODS", 0, 1, "C")
+  pdf.set_font("Helvetica", "", 9)
+  pdf.cell(
+      0,
+      5,
+      "Fuvahmulah, Maldives | Official Monthly Salary Slip",
+      0,
+      1,
+      "C",
+  )
+
+  pdf.ln(12)
+  pdf.set_text_color(30, 41, 59)
+
+  # Period & Date
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(100, 6, f"Pay Period: {period_label}", 0, 0)
+  pdf.cell(
+      90,
+      6,
+      f"Date Issued: {datetime.date.today().strftime('%d %B %Y')}",
+      0,
+      1,
+      "R",
+  )
+
+  pdf.set_draw_color(203, 213, 225)
+  pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+  pdf.ln(6)
+
+  # Employee Details Grid
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Employee ID:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(60, 7, str(record["Staff ID"]), 0, 0)
+
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Employee Name:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(50, 7, str(record["Employee"]), 0, 1)
+
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Standard Days:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(60, 7, "26 Days", 0, 0)
+
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Units Worked:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(50, 7, f"{record['Units Worked']} Days", 0, 1)
+
+  pdf.ln(6)
+
+  # Financial Table Header
+  pdf.set_fill_color(241, 245, 249)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(120, 8, "Earnings & Allowances", 1, 0, "L", fill=True)
+  pdf.cell(70, 8, "Amount (MVR)", 1, 1, "R", fill=True)
+
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(120, 8, "Base Monthly Salary (Contractual)", 1, 0)
+  pdf.cell(70, 8, f"{record['Base (MVR)']:,.2f}", 1, 1, "R")
+
+  # Deductions if any
+  base_deduction = record["Base (MVR)"] - record["Adjusted Base (MVR)"]
+  if base_deduction > 0:
+    pdf.cell(
+        120,
+        8,
+        f"Absence Deduction ({26 - record['Units Worked']} unworked days)",
+        1,
+        0,
+    )
+    pdf.cell(70, 8, f"-{base_deduction:,.2f}", 1, 1, "R")
+
+  pdf.cell(120, 8, f"Overtime Pay ({record['OT Hours']} hrs @ 1.25x)", 1, 0)
+  pdf.cell(70, 8, f"+{record['OT Payout (MVR)']:,.2f}", 1, 1, "R")
+
+  # Net Total Row
+  pdf.set_font("Helvetica", "B", 11)
+  pdf.set_fill_color(226, 232, 240)
+  pdf.cell(120, 10, "NET SALARY PAYABLE (MVR)", 1, 0, "L", fill=True)
+  pdf.cell(
+      70, 10, f"{record['Net Payout (MVR)']:,.2f} MVR", 1, 1, "R", fill=True
+  )
+
+  pdf.ln(25)
+
+  # Signatures
+  pdf.set_font("Helvetica", "", 9)
+  pdf.line(15, pdf.get_y(), 80, pdf.get_y())
+  pdf.line(130, pdf.get_y(), 195, pdf.get_y())
+
+  pdf.cell(90, 5, "Authorized Signature (Zelqon Foods)", 0, 0, "L")
+  pdf.cell(100, 5, "Employee Signature / Acknowledgment", 0, 1, "R")
+
+  return bytes(pdf.output())
+
 
 # --- SECURE ACCESS GATEWAY ---
 def check_password():
@@ -153,7 +251,8 @@ def check_password():
     with st.form("login_form"):
       st.markdown("### 🔒 Zelqon Portal Access")
       st.markdown(
-          "<p style='color: #64748b; font-size: 0.9rem;'>Enter your administrative credentials to continue.</p>",
+          "<p style='color: #64748b; font-size: 0.9rem;'>Enter your"
+          " administrative credentials to continue.</p>",
           unsafe_allow_html=True,
       )
       pwd = st.text_input("Access Password", type="password")
@@ -165,6 +264,7 @@ def check_password():
         else:
           st.error("Invalid credentials. Please verify your password.")
   return False
+
 
 if not check_password():
   st.stop()
@@ -194,11 +294,10 @@ if "attendance" not in st.session_state:
       columns=["Date", "Staff ID", "Name", "Status", "Overtime Hours", "Notes"]
   )
 
-# --- APPLICATION TABS ---
 tab1, tab2, tab3 = st.tabs([
     "📋 Attendance Register",
     "👥 Workforce Directory",
-    "💳 Payroll Ledger",
+    "💳 Payroll & Payslips",
 ])
 
 # ================= TAB 1: ATTENDANCE =================
@@ -211,7 +310,7 @@ with tab1:
     )
   with m2:
     st.metric(
-        label="Logs Logged This Month",
+        label="Monthly Shifts Logged",
         value=f"{len(st.session_state.attendance)} Shifts",
     )
   with m3:
@@ -298,7 +397,9 @@ with tab1:
 # ================= TAB 2: STAFF DIRECTORY =================
 with tab2:
   st.markdown("#### Active Team Profiles")
-  st.dataframe(st.session_state.staff, use_container_width=True, hide_index=True)
+  st.dataframe(
+      st.session_state.staff, use_container_width=True, hide_index=True
+  )
 
   st.markdown("<br>", unsafe_allow_html=True)
   col_add, col_del = st.columns(2)
@@ -345,14 +446,12 @@ with tab2:
         st.info("Workforce directory is empty.")
         st.form_submit_button("Execute Removal", disabled=True)
 
-# ================= TAB 3: PAYROLL LEDGER =================
+# ================= TAB 3: PAYROLL & PAYSLIPS =================
 with tab3:
   st.markdown("#### Monthly Disbursement Ledger")
 
   if st.session_state.attendance.empty:
-    st.info(
-        "Attendance ledger is currently blank. Log daily shifts to calculate payouts."
-    )
+    st.info("Attendance ledger is currently blank. Log shifts in Tab 1.")
   else:
     df_logs = st.session_state.attendance.copy()
 
@@ -376,11 +475,9 @@ with tab3:
       worked_days = sub_logs["Day_Value"].sum()
       ot_hours_total = sub_logs["Overtime Hours"].sum()
 
-      # Hourly rate = (Base Salary / 26 days) / 8 hours
       hourly = (base_salary / std_days) / 8.0 if std_days > 0 else 0.0
       ot_pay = ot_hours_total * (hourly * 1.25)
 
-      # Pro-rated deduction for unattended standard days
       adjusted_base = base_salary
       if worked_days < std_days and std_days > 0:
         adjusted_base = (base_salary / std_days) * worked_days
@@ -391,6 +488,7 @@ with tab3:
           "Staff ID": emp_id,
           "Employee": emp_name,
           "Base (MVR)": base_salary,
+          "Adjusted Base (MVR)": adjusted_base,
           "Units Worked": worked_days,
           "OT Hours": ot_hours_total,
           "OT Payout (MVR)": round(ot_pay, 2),
@@ -399,7 +497,6 @@ with tab3:
 
     payroll_df = pd.DataFrame(payroll_records)
 
-    # Executive Summary Metrics
     total_budget = payroll_df["Net Payout (MVR)"].sum()
     total_ot_paid = payroll_df["OT Payout (MVR)"].sum()
 
@@ -415,12 +512,41 @@ with tab3:
       )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.dataframe(payroll_df, use_container_width=True, hide_index=True)
+    display_df = payroll_df.drop(columns=["Adjusted Base (MVR)"])
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    csv_export = payroll_df.to_csv(index=False).encode("utf-8")
+    csv_export = display_df.to_csv(index=False).encode("utf-8")
     st.download_button(
         label="📥 Export Certified Payroll Sheet (CSV)",
         data=csv_export,
         file_name=f"zelqon_disbursement_{datetime.date.today().strftime('%Y_%m')}.csv",
         mime="text/csv",
     )
+
+    # --- PDF PAYSLIP GENERATOR SECTION ---
+    st.markdown("---")
+    st.markdown("### 📄 Individual Monthly Payslip Generator")
+    st.markdown(
+        "Generate and download official PDF payslips to share with employees."
+    )
+
+    col_emp, col_btn = st.columns([2, 1])
+    with col_emp:
+      selected_emp_name = st.selectbox(
+          "Select Employee for Payslip", payroll_df["Employee"].tolist()
+      )
+
+    target_record = payroll_df[
+        payroll_df["Employee"] == selected_emp_name
+    ].iloc[0]
+    period_str = datetime.date.today().strftime("%B %Y")
+    pdf_bytes = generate_payslip_pdf(target_record, period_str)
+
+    with col_btn:
+      st.markdown("<br>", unsafe_allow_html=True)
+      st.download_button(
+          label=f"📥 Download {selected_emp_name}'s Payslip (PDF)",
+          data=pdf_bytes,
+          file_name=f"Payslip_{selected_emp_name.replace(' ', '_')}_{datetime.date.today().strftime('%b_%Y')}.pdf",
+          mime="application/pdf",
+      )
