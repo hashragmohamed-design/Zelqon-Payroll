@@ -2,6 +2,7 @@ import datetime
 from fpdf import FPDF
 import pandas as pd
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(
     page_title="Zelqon Foods | Operations & Payroll",
@@ -10,238 +11,72 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- ENTERPRISE EXECUTIVE STYLING ---
+# --- PROFESSIONAL STYLING ---
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-        color: #0f172a;
-    }
-
-    [data-testid="stHeader"] {
-        background-color: rgba(248, 250, 252, 0.85);
-        backdrop-filter: blur(8px);
-    }
-
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); color: #0f172a; }
+    [data-testid="stHeader"] { background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(8px); }
     .brand-hero {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #ffffff;
-        padding: 24px 28px;
-        border-radius: 14px;
-        margin-bottom: 24px;
-        border: 1px solid #334155;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        color: #ffffff; padding: 24px 28px; border-radius: 14px; margin-bottom: 24px;
+        border: 1px solid #334155; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     }
-    .brand-hero h1 {
-        color: #ffffff !important;
-        font-size: 1.65rem;
-        font-weight: 700;
-        margin: 0;
-        letter-spacing: -0.02em;
-    }
-    .brand-hero p {
-        color: #94a3b8 !important;
-        font-size: 0.88rem;
-        margin: 4px 0 0 0;
-    }
-
-    [data-testid="stForm"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 22px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    }
-
-    .stTextInput>div>div>input,
-    .stNumberInput>div>div>input,
-    .stSelectbox>div>div {
-        border-radius: 8px !important;
-        border: 1px solid #cbd5e1 !important;
-        font-size: 0.92rem !important;
-    }
-
+    .brand-hero h1 { color: #ffffff !important; font-size: 1.65rem; font-weight: 700; margin: 0; }
+    .brand-hero p { color: #94a3b8 !important; font-size: 0.88rem; margin: 4px 0 0 0; }
+    [data-testid="stForm"] { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; }
     .stButton>button {
         background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-        color: #ffffff !important;
-        font-weight: 600;
-        font-size: 0.9rem;
-        border-radius: 8px;
-        border: none;
-        padding: 0.55rem 1.4rem;
-        box-shadow: 0 1px 3px rgba(13, 148, 136, 0.3);
+        color: #ffffff !important; font-weight: 600; border-radius: 8px; border: none; padding: 0.55rem 1.4rem;
     }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-        box-shadow: 0 4px 8px rgba(13, 148, 136, 0.4);
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: #e2e8f0;
-        padding: 5px;
-        border-radius: 10px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 7px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        color: #475569;
-        padding: 8px 18px;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    [data-testid="stMetric"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    }
-    [data-testid="stMetricLabel"] {
-        color: #64748b !important;
-        font-weight: 600;
-        font-size: 0.8rem !important;
-        text-transform: uppercase;
-    }
-    [data-testid="stMetricValue"] {
-        color: #0f172a !important;
-        font-weight: 700 !important;
-        font-size: 1.45rem !important;
-    }
+    [data-testid="stMetric"] { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; }
     </style>
-    """,
+""",
     unsafe_allow_html=True,
 )
 
-# --- PDF GENERATION ENGINE ---
-def generate_payslip_pdf(record, period_label):
-  pdf = FPDF()
-  pdf.add_page()
-  pdf.set_auto_page_break(auto=True, margin=15)
+# --- GOOGLE SHEETS LIVE CONNECTION ---
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-  # Top Banner
-  pdf.set_fill_color(15, 23, 42)
-  pdf.rect(0, 0, 210, 32, "F")
 
-  pdf.set_text_color(255, 255, 255)
-  pdf.set_font("Helvetica", "B", 18)
-  pdf.set_xy(10, 8)
-  pdf.cell(0, 8, "ZELQON FOODS", 0, 1, "C")
-  pdf.set_font("Helvetica", "", 9)
-  pdf.cell(
-      0,
-      5,
-      "Fuvahmulah, Maldives | Official Monthly Salary Slip",
-      0,
-      1,
-      "C",
-  )
-
-  pdf.ln(12)
-  pdf.set_text_color(30, 41, 59)
-
-  # Period & Date
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(100, 6, f"Pay Period: {period_label}", 0, 0)
-  pdf.cell(
-      90,
-      6,
-      f"Date Issued: {datetime.date.today().strftime('%d %B %Y')}",
-      0,
-      1,
-      "R",
-  )
-
-  pdf.set_draw_color(203, 213, 225)
-  pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
-  pdf.ln(6)
-
-  # Employee Details Grid
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(40, 7, "Employee ID:", 0, 0)
-  pdf.set_font("Helvetica", "", 10)
-  pdf.cell(60, 7, str(record["Staff ID"]), 0, 0)
-
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(40, 7, "Employee Name:", 0, 0)
-  pdf.set_font("Helvetica", "", 10)
-  pdf.cell(50, 7, str(record["Employee"]), 0, 1)
-
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(40, 7, "Standard Days:", 0, 0)
-  pdf.set_font("Helvetica", "", 10)
-  pdf.cell(60, 7, "26 Days", 0, 0)
-
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(40, 7, "Units Worked:", 0, 0)
-  pdf.set_font("Helvetica", "", 10)
-  pdf.cell(50, 7, f"{record['Units Worked']} Days", 0, 1)
-
-  pdf.ln(6)
-
-  # Financial Table Header
-  pdf.set_fill_color(241, 245, 249)
-  pdf.set_font("Helvetica", "B", 10)
-  pdf.cell(120, 8, "Earnings & Allowances", 1, 0, "L", fill=True)
-  pdf.cell(70, 8, "Amount (MVR)", 1, 1, "R", fill=True)
-
-  pdf.set_font("Helvetica", "", 10)
-  pdf.cell(120, 8, "Base Monthly Salary (Contractual)", 1, 0)
-  pdf.cell(70, 8, f"{record['Base (MVR)']:,.2f}", 1, 1, "R")
-
-  # Deductions if any
-  base_deduction = record["Base (MVR)"] - record["Adjusted Base (MVR)"]
-  if base_deduction > 0:
-    pdf.cell(
-        120,
-        8,
-        f"Absence Deduction ({26 - record['Units Worked']} unworked days)",
-        1,
-        0,
+def get_staff_data():
+  try:
+    df = conn.read(worksheet="Staff", ttl=0)
+    return df.dropna(how="all")
+  except Exception:
+    return pd.DataFrame(
+        columns=[
+            "Staff ID",
+            "Name",
+            "Base Salary (MVR)",
+            "Standard Monthly Days",
+        ]
     )
-    pdf.cell(70, 8, f"-{base_deduction:,.2f}", 1, 1, "R")
-
-  pdf.cell(120, 8, f"Overtime Pay ({record['OT Hours']} hrs @ 1.25x)", 1, 0)
-  pdf.cell(70, 8, f"+{record['OT Payout (MVR)']:,.2f}", 1, 1, "R")
-
-  # Net Total Row
-  pdf.set_font("Helvetica", "B", 11)
-  pdf.set_fill_color(226, 232, 240)
-  pdf.cell(120, 10, "NET SALARY PAYABLE (MVR)", 1, 0, "L", fill=True)
-  pdf.cell(
-      70, 10, f"{record['Net Payout (MVR)']:,.2f} MVR", 1, 1, "R", fill=True
-  )
-
-  pdf.ln(25)
-
-  # Signatures
-  pdf.set_font("Helvetica", "", 9)
-  pdf.line(15, pdf.get_y(), 80, pdf.get_y())
-  pdf.line(130, pdf.get_y(), 195, pdf.get_y())
-
-  pdf.cell(90, 5, "Authorized Signature (Zelqon Foods)", 0, 0, "L")
-  pdf.cell(100, 5, "Employee Signature / Acknowledgment", 0, 1, "R")
-
-  return bytes(pdf.output())
 
 
-# --- SECURE ACCESS GATEWAY ---
+def get_attendance_data():
+  try:
+    df = conn.read(worksheet="Attendance", ttl=0)
+    return df.dropna(how="all")
+  except Exception:
+    return pd.DataFrame(
+        columns=[
+            "Date",
+            "Staff ID",
+            "Name",
+            "Status",
+            "Overtime Hours",
+            "Notes",
+        ]
+    )
+
+
+# --- AUTHENTICATION ---
 def check_password():
   if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
-
   if st.session_state.password_correct:
     return True
 
@@ -250,11 +85,6 @@ def check_password():
     st.markdown("<br><br>", unsafe_allow_html=True)
     with st.form("login_form"):
       st.markdown("### 🔒 Zelqon Portal Access")
-      st.markdown(
-          "<p style='color: #64748b; font-size: 0.9rem;'>Enter your"
-          " administrative credentials to continue.</p>",
-          unsafe_allow_html=True,
-      )
       pwd = st.text_input("Access Password", type="password")
       submit = st.form_submit_button("Authenticate")
       if submit:
@@ -262,37 +92,27 @@ def check_password():
           st.session_state.password_correct = True
           st.rerun()
         else:
-          st.error("Invalid credentials. Please verify your password.")
+          st.error("Invalid credentials.")
   return False
 
 
 if not check_password():
   st.stop()
 
-# --- HEADER SECTION ---
+# --- LOAD CLOUD DATA ---
+staff_df = get_staff_data()
+attendance_df = get_attendance_data()
+
+# --- HEADER ---
 st.markdown(
     """
     <div class="brand-hero">
         <h1>ZELQON FOODS</h1>
-        <p>Operations Management & Payroll Terminal • Fuvahmulah Division</p>
+        <p>Permanent Cloud Operations Terminal • Fuvahmulah Division</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-# --- DATA INITIALIZATION ---
-if "staff" not in st.session_state:
-  st.session_state.staff = pd.DataFrame({
-      "Staff ID": ["ZF-001", "ZF-002"],
-      "Name": ["Staff Member 1", "Staff Member 2"],
-      "Base Salary (MVR)": [3000.0, 3000.0],
-      "Standard Monthly Days": [26, 26],
-  })
-
-if "attendance" not in st.session_state:
-  st.session_state.attendance = pd.DataFrame(
-      columns=["Date", "Staff ID", "Name", "Status", "Overtime Hours", "Notes"]
-  )
 
 tab1, tab2, tab3 = st.tabs([
     "📋 Attendance Register",
@@ -304,32 +124,21 @@ tab1, tab2, tab3 = st.tabs([
 with tab1:
   m1, m2, m3 = st.columns(3)
   with m1:
-    st.metric(
-        label="Active Workforce",
-        value=f"{len(st.session_state.staff)} Members",
-    )
+    st.metric(label="Active Workforce", value=f"{len(staff_df)} Members")
   with m2:
-    st.metric(
-        label="Monthly Shifts Logged",
-        value=f"{len(st.session_state.attendance)} Shifts",
-    )
+    st.metric(label="Synced Cloud Shifts", value=f"{len(attendance_df)} Shifts")
   with m3:
     today_logged = (
-        len(
-            st.session_state.attendance[
-                st.session_state.attendance["Date"]
-                == str(datetime.date.today())
-            ]
-        )
-        if not st.session_state.attendance.empty
+        len(attendance_df[attendance_df["Date"] == str(datetime.date.today())])
+        if not attendance_df.empty
         else 0
     )
     st.metric(label="Logged Today", value=f"{today_logged} Records")
 
   st.markdown("<br>", unsafe_allow_html=True)
 
-  if st.session_state.staff.empty:
-    st.warning("Staff directory is empty. Add employees in Tab 2 to proceed.")
+  if staff_df.empty:
+    st.warning("Please add employees in the Workforce Directory tab first.")
   else:
     with st.form("attendance_form", clear_on_submit=True):
       st.markdown("#### Record Shift Attendance")
@@ -338,7 +147,7 @@ with tab1:
         att_date = st.date_input("Shift Date", datetime.date.today())
       with c_staff:
         selected_staff = st.selectbox(
-            "Employee Name", st.session_state.staff["Name"].tolist()
+            "Employee Name", staff_df["Name"].tolist()
         )
 
       c_stat, c_ot = st.columns(2)
@@ -352,12 +161,12 @@ with tab1:
             "Overtime Hours", min_value=0.0, value=0.0, step=0.5
         )
 
-      notes = st.text_input("Operational Notes / Batch Activity", "")
-      record_submit = st.form_submit_button("Log Shift Record")
+      notes = st.text_input("Operational Notes", "")
+      record_submit = st.form_submit_button("Save to Google Sheets")
 
       if record_submit:
-        staff_id = st.session_state.staff.loc[
-            st.session_state.staff["Name"] == selected_staff, "Staff ID"
+        staff_id = staff_df.loc[
+            staff_df["Name"] == selected_staff, "Staff ID"
         ].values[0]
         new_row = pd.DataFrame({
             "Date": [str(att_date)],
@@ -367,39 +176,27 @@ with tab1:
             "Overtime Hours": [ot_hours],
             "Notes": [notes],
         })
-        st.session_state.attendance = pd.concat(
-            [st.session_state.attendance, new_row], ignore_index=True
+        updated_att = pd.concat([attendance_df, new_row], ignore_index=True)
+        conn.update(worksheet="Attendance", data=updated_att)
+        st.success(
+            f"Shift permanently backed up to Google Sheets for {selected_staff}!"
         )
-        st.success(f"Shift recorded for {selected_staff} ({att_date}).")
+        st.rerun()
 
-  st.markdown("<br>#### Shift History Log", unsafe_allow_html=True)
-  if not st.session_state.attendance.empty:
+  st.markdown("<br>#### Synced Shift History", unsafe_allow_html=True)
+  if not attendance_df.empty:
     st.dataframe(
-        st.session_state.attendance.sort_values(by="Date", ascending=False),
+        attendance_df.sort_values(by="Date", ascending=False),
         use_container_width=True,
         hide_index=True,
     )
-    if st.button("Reset Shift Records"):
-      st.session_state.attendance = pd.DataFrame(
-          columns=[
-              "Date",
-              "Staff ID",
-              "Name",
-              "Status",
-              "Overtime Hours",
-              "Notes",
-          ]
-      )
-      st.rerun()
   else:
-    st.info("No shift logs entered yet.")
+    st.info("No shift records found in Google Sheets.")
 
 # ================= TAB 2: STAFF DIRECTORY =================
 with tab2:
-  st.markdown("#### Active Team Profiles")
-  st.dataframe(
-      st.session_state.staff, use_container_width=True, hide_index=True
-  )
+  st.markdown("#### Active Team Profiles (Google Sheets Synced)")
+  st.dataframe(staff_df, use_container_width=True, hide_index=True)
 
   st.markdown("<br>", unsafe_allow_html=True)
   col_add, col_del = st.columns(2)
@@ -411,49 +208,48 @@ with tab2:
       new_sal = st.number_input(
           "Monthly Base Salary (MVR)", value=3000.0, step=250.0
       )
-      add_action = st.form_submit_button("Register Team Member")
+      add_action = st.form_submit_button("Save Member to Cloud")
 
       if add_action and new_name:
-        generated_id = f"ZF-{len(st.session_state.staff) + 1:03d}"
+        generated_id = f"ZF-{len(staff_df) + 1:03d}"
         new_entry = pd.DataFrame({
             "Staff ID": [generated_id],
             "Name": [new_name.strip()],
             "Base Salary (MVR)": [new_sal],
             "Standard Monthly Days": [26],
         })
-        st.session_state.staff = pd.concat(
-            [st.session_state.staff, new_entry], ignore_index=True
-        )
-        st.success(f"Staff member {new_name} added as {generated_id}.")
+        updated_staff = pd.concat([staff_df, new_entry], ignore_index=True)
+        conn.update(worksheet="Staff", data=updated_staff)
+        st.success(f"Saved {new_name} to Google Drive database.")
         st.rerun()
 
   with col_del:
     with st.form("del_staff_form"):
       st.markdown("#### Remove Staff Member")
-      if not st.session_state.staff.empty:
+      if not staff_df.empty:
         target_name = st.selectbox(
-            "Select Staff to Terminate/Remove",
-            st.session_state.staff["Name"].tolist(),
+            "Select Staff to Remove", staff_df["Name"].tolist()
         )
-        remove_action = st.form_submit_button("Execute Removal")
+        remove_action = st.form_submit_button("Execute Cloud Removal")
         if remove_action:
-          st.session_state.staff = st.session_state.staff[
-              st.session_state.staff["Name"] != target_name
+          updated_staff = staff_df[
+              staff_df["Name"] != target_name
           ].reset_index(drop=True)
-          st.success(f"Removed {target_name} from workforce records.")
+          conn.update(worksheet="Staff", data=updated_staff)
+          st.success(f"Removed {target_name} from Google Sheet.")
           st.rerun()
       else:
-        st.info("Workforce directory is empty.")
+        st.info("Directory is empty.")
         st.form_submit_button("Execute Removal", disabled=True)
 
 # ================= TAB 3: PAYROLL & PAYSLIPS =================
 with tab3:
   st.markdown("#### Monthly Disbursement Ledger")
 
-  if st.session_state.attendance.empty:
-    st.info("Attendance ledger is currently blank. Log shifts in Tab 1.")
+  if attendance_df.empty or staff_df.empty:
+    st.info("Log attendance to calculate live payroll.")
   else:
-    df_logs = st.session_state.attendance.copy()
+    df_logs = attendance_df.copy()
 
     def get_unit_day(val):
       if val in ["Present", "Leave (Paid)"]:
@@ -465,11 +261,11 @@ with tab3:
     df_logs["Day_Value"] = df_logs["Status"].apply(get_unit_day)
     payroll_records = []
 
-    for _, emp in st.session_state.staff.iterrows():
+    for _, emp in staff_df.iterrows():
       emp_id = emp["Staff ID"]
       emp_name = emp["Name"]
-      base_salary = emp["Base Salary (MVR)"]
-      std_days = emp["Standard Monthly Days"]
+      base_salary = float(emp["Base Salary (MVR)"])
+      std_days = float(emp["Standard Monthly Days"])
 
       sub_logs = df_logs[df_logs["Staff ID"] == emp_id]
       worked_days = sub_logs["Day_Value"].sum()
@@ -515,38 +311,106 @@ with tab3:
     display_df = payroll_df.drop(columns=["Adjusted Base (MVR)"])
     st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    csv_export = display_df.to_csv(index=False).encode("utf-8")
+
+# --- PDF GENERATOR ---
+def generate_payslip_pdf(record, period_label):
+  pdf = FPDF()
+  pdf.add_page()
+  pdf.set_auto_page_break(auto=True, margin=15)
+  pdf.set_fill_color(15, 23, 42)
+  pdf.rect(0, 0, 210, 32, "F")
+  pdf.set_text_color(255, 255, 255)
+  pdf.set_font("Helvetica", "B", 18)
+  pdf.set_xy(10, 8)
+  pdf.cell(0, 8, "ZELQON FOODS", 0, 1, "C")
+  pdf.set_font("Helvetica", "", 9)
+  pdf.cell(
+      0, 5, "Fuvahmulah, Maldives | Official Monthly Salary Slip", 0, 1, "C"
+  )
+  pdf.ln(12)
+  pdf.set_text_color(30, 41, 59)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(100, 6, f"Pay Period: {period_label}", 0, 0)
+  pdf.cell(
+      90,
+      6,
+      f"Date Issued: {datetime.date.today().strftime('%d %B %Y')}",
+      0,
+      1,
+      "R",
+  )
+  pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+  pdf.ln(6)
+  pdf.cell(40, 7, "Employee ID:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(60, 7, str(record["Staff ID"]), 0, 0)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Employee Name:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(50, 7, str(record["Employee"]), 0, 1)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Standard Days:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(60, 7, "26 Days", 0, 0)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(40, 7, "Units Worked:", 0, 0)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(50, 7, f"{record['Units Worked']} Days", 0, 1)
+  pdf.ln(6)
+  pdf.set_fill_color(241, 245, 249)
+  pdf.set_font("Helvetica", "B", 10)
+  pdf.cell(120, 8, "Earnings & Allowances", 1, 0, "L", fill=True)
+  pdf.cell(70, 8, "Amount (MVR)", 1, 1, "R", fill=True)
+  pdf.set_font("Helvetica", "", 10)
+  pdf.cell(120, 8, "Base Monthly Salary", 1, 0)
+  pdf.cell(70, 8, f"{record['Base (MVR)']:,.2f}", 1, 1, "R")
+  base_deduction = record["Base (MVR)"] - record["Adjusted Base (MVR)"]
+  if base_deduction > 0:
+    pdf.cell(
+        120,
+        8,
+        f"Absence Deduction ({26 - record['Units Worked']} unworked days)",
+        1,
+        0,
+    )
+    pdf.cell(70, 8, f"-{base_deduction:,.2f}", 1, 1, "R")
+  pdf.cell(120, 8, f"Overtime Pay ({record['OT Hours']} hrs @ 1.25x)", 1, 0)
+  pdf.cell(70, 8, f"+{record['OT Payout (MVR)']:,.2f}", 1, 1, "R")
+  pdf.set_font("Helvetica", "B", 11)
+  pdf.set_fill_color(226, 232, 240)
+  pdf.cell(120, 10, "NET SALARY PAYABLE (MVR)", 1, 0, "L", fill=True)
+  pdf.cell(
+      70, 10, f"{record['Net Payout (MVR)']:,.2f} MVR", 1, 1, "R", fill=True
+  )
+  pdf.ln(25)
+  pdf.set_font("Helvetica", "", 9)
+  pdf.line(15, pdf.get_y(), 80, pdf.get_y())
+  pdf.line(130, pdf.get_y(), 195, pdf.get_y())
+  pdf.cell(90, 5, "Authorized Signature (Zelqon Foods)", 0, 0, "L")
+  pdf.cell(100, 5, "Employee Signature / Acknowledgment", 0, 1, "R")
+  return bytes(pdf.output())
+
+
+if not attendance_df.empty and not staff_df.empty:
+  st.markdown("---")
+  st.markdown("### 📄 Individual Monthly Payslip Generator")
+  col_emp, col_btn = st.columns([2, 1])
+  with col_emp:
+    selected_emp_name = st.selectbox(
+        "Select Employee for Payslip", payroll_df["Employee"].tolist()
+    )
+
+  target_record = payroll_df[
+      payroll_df["Employee"] == selected_emp_name
+  ].iloc[0]
+  period_str = datetime.date.today().strftime("%B %Y")
+  pdf_bytes = generate_payslip_pdf(target_record, period_str)
+
+  with col_btn:
+    st.markdown("<br>", unsafe_allow_html=True)
     st.download_button(
-        label="📥 Export Certified Payroll Sheet (CSV)",
-        data=csv_export,
-        file_name=f"zelqon_disbursement_{datetime.date.today().strftime('%Y_%m')}.csv",
-        mime="text/csv",
+        label=f"📥 Download {selected_emp_name}'s Payslip (PDF)",
+        data=pdf_bytes,
+        file_name=f"Payslip_{selected_emp_name.replace(' ', '_')}_{datetime.date.today().strftime('%b_%Y')}.pdf",
+        mime="application/pdf",
     )
-
-    # --- PDF PAYSLIP GENERATOR SECTION ---
-    st.markdown("---")
-    st.markdown("### 📄 Individual Monthly Payslip Generator")
-    st.markdown(
-        "Generate and download official PDF payslips to share with employees."
-    )
-
-    col_emp, col_btn = st.columns([2, 1])
-    with col_emp:
-      selected_emp_name = st.selectbox(
-          "Select Employee for Payslip", payroll_df["Employee"].tolist()
-      )
-
-    target_record = payroll_df[
-        payroll_df["Employee"] == selected_emp_name
-    ].iloc[0]
-    period_str = datetime.date.today().strftime("%B %Y")
-    pdf_bytes = generate_payslip_pdf(target_record, period_str)
-
-    with col_btn:
-      st.markdown("<br>", unsafe_allow_html=True)
-      st.download_button(
-          label=f"📥 Download {selected_emp_name}'s Payslip (PDF)",
-          data=pdf_bytes,
-          file_name=f"Payslip_{selected_emp_name.replace(' ', '_')}_{datetime.date.today().strftime('%b_%Y')}.pdf",
-          mime="application/pdf",
-      )
