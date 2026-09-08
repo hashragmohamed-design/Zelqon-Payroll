@@ -6,6 +6,31 @@ st.set_page_config(
     page_title="Zelqon Foods - Attendance & Payroll", layout="wide"
 )
 
+# --- SIMPLE PASSWORD PROTECTION ---
+def check_password():
+  """Returns True if the correct password is entered."""
+  if "password_correct" not in st.session_state:
+    st.session_state.password_correct = False
+
+  if st.session_state.password_correct:
+    return True
+
+  st.subheader("🔒 Zelqon Foods - Secure Login")
+  pwd = st.text_input("Enter App Password", type="password")
+  
+  # You can change 'zelqon2026' to any secure password you prefer
+  if st.button("Login"):
+    if pwd == "zelqon2026": 
+      st.session_state.password_correct = True
+      st.rerun()
+    else:
+      st.error("Incorrect password. Please try again.")
+  return False
+
+if not check_password():
+  st.stop()
+
+# --- REST OF YOUR APP CODE STARTS HERE ---
 st.title("🌱 Zelqon Foods: Staff Attendance & Payroll Tracker")
 st.markdown("### Initial Startup Team Management (Fuvahmulah)")
 
@@ -15,11 +40,10 @@ if "staff" not in st.session_state:
       "Staff ID": ["ZF-001", "ZF-002"],
       "Name": ["Staff Member 1", "Staff Member 2"],
       "Base Salary (MVR)": [3000.0, 3000.0],
-      "Standard Monthly Days": [26, 26],  # e.g., 6 days a week schedule
+      "Standard Monthly Days": [26, 26],
   })
 
 if "attendance" not in st.session_state:
-  # Mock initial attendance log for the current month
   st.session_state.attendance = pd.DataFrame(columns=[
       "Date",
       "Staff ID",
@@ -36,7 +60,6 @@ tab1, tab2, tab3 = st.tabs(
 
 with tab1:
   st.subheader("Daily Attendance Entry")
-
   with st.form("attendance_form"):
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -129,22 +152,17 @@ with tab3:
         "Log some attendance data in the first tab to view payroll calculations."
     )
   else:
-    # Calculate payroll metrics based on logs
     df_att = st.session_state.attendance.copy()
 
-    # Map status to multipliers/deductions if needed
-    # Present = 1, Half-Day = 0.5, Absent = 0
     def get_day_value(status):
       if status == "Present" or status == "Leave (Paid)":
         return 1.0
       elif status == "Half-Day":
-        Spacer = 0.5
         return 0.5
       return 0.0
 
     df_att["Day_Value"] = df_att["Status"].apply(get_day_value)
 
-    # Aggregate by staff
     summary_list = []
     for index, row in st.session_state.staff.iterrows():
       s_id = row["Staff ID"]
@@ -156,16 +174,11 @@ with tab3:
       days_worked = staff_logs["Day_Value"].sum()
       total_ot = staff_logs["Overtime Hours"].sum()
 
-      # Simple prorated calculation or standard base deduction
-      # Assuming 1 overtime hour = (Base Salary / Standard Days / 8 hours) * 1.25 multiplier
       hourly_rate = (base_sal / std_days) / 8
       ot_pay = total_ot * hourly_rate * 1.25
 
-      # Pro-rate base salary if they missed days below standard (optional logic, or flat rate)
-      # Let's use a proportional approach if days logged are fewer than standard
       effective_base = base_sal
       if days_worked < std_days and std_days > 0:
-        # Optional: Pro-rate base salary based on attendance adherence
         effective_base = (base_sal / std_days) * days_worked
 
       net_pay = effective_base + ot_pay
@@ -183,7 +196,6 @@ with tab3:
     summary_df = pd.DataFrame(summary_list)
     st.dataframe(summary_df, use_container_width=True)
 
-    # Export option
     csv = summary_df.to_csv(index=False).encode("utf-8")
     st.download_button(
         label="Download Monthly Payroll Report (CSV)",
