@@ -3,60 +3,143 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="Zelqon Foods - HR & Payroll",
+    page_title="Zelqon Foods | Operations & Payroll",
+    page_icon="💼",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# --- PROFESSIONAL EXECUTIVE BACKGROUND & UI STYLING ---
+# --- ENTERPRISE EXECUTIVE STYLING ---
 st.markdown(
     """
     <style>
-    /* App background styling */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Main canvas background */
     [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        color: #1e293b;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        color: #0f172a;
     }
-    
-    /* Transparent header to blend with background */
+
     [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0);
+        background-color: rgba(248, 250, 252, 0.85);
+        backdrop-filter: blur(8px);
     }
 
-    /* Modern cards, inputs, and button designs */
-    .stButton>button {
-        background-color: #0f766e;
-        color: white;
-        border-radius: 8px;
-        border: none;
-        padding: 0.5rem 1.2rem;
-        font-weight: 600;
-        transition: all 0.2s ease-in-out;
+    /* Top Brand Hero Banner */
+    .brand-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        padding: 24px 28px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     }
-    .stButton>button:hover {
-        background-color: #115e59;
-        color: #f8fafc;
+    .brand-hero h1 {
+        color: #ffffff !important;
+        font-size: 1.65rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+    .brand-hero p {
+        color: #94a3b8 !important;
+        font-size: 0.88rem;
+        margin: 4px 0 0 0;
     }
 
-    .stTextInput>div>div>input, 
+    /* Form and Content Cards */
+    [data-testid="stForm"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 22px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Input Fields */
+    .stTextInput>div>div>input,
     .stNumberInput>div>div>input,
     .stSelectbox>div>div {
-        border-radius: 8px;
-        background-color: #ffffff;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 0.92rem !important;
+    }
+    .stTextInput>div>div>input:focus,
+    .stNumberInput>div>div>input:focus {
+        border-color: #0d9488 !important;
+        box-shadow: 0 0 0 1px #0d9488 !important;
     }
 
+    /* Primary Buttons */
+    .stButton>button {
+        background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        color: #ffffff !important;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        border: none;
+        padding: 0.55rem 1.4rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 3px rgba(13, 148, 136, 0.3);
+    }
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+        box-shadow: 0 4px 8px rgba(13, 148, 136, 0.4);
+        transform: translateY(-1px);
+    }
+
+    /* Tab Navigation */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: #ffffff;
+        gap: 8px;
+        background-color: #e2e8f0;
+        padding: 5px;
         border-radius: 10px;
-        padding: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 7px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: #475569;
+        padding: 8px 18px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Metric Cards */
+    [data-testid="stMetric"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    [data-testid="stMetricLabel"] {
+        color: #64748b !important;
+        font-weight: 600;
+        font-size: 0.8rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    [data-testid="stMetricValue"] {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        font-size: 1.45rem !important;
     }
     </style>
-""",
+    """,
     unsafe_allow_html=True,
 )
 
-# --- PASSWORD AUTHENTICATION ---
+# --- SECURE ACCESS GATEWAY ---
 def check_password():
   if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
@@ -64,28 +147,40 @@ def check_password():
   if st.session_state.password_correct:
     return True
 
-  col1, col2, col3 = st.columns([1, 2, 1])
-  with col2:
-    st.markdown("### 🔒 Zelqon Foods Portal")
-    st.markdown("Please enter your administrative password to proceed.")
-    pwd = st.text_input("Password", type="password")
-    if st.button("Access Dashboard"):
-      if pwd == "zelqon2026":
-        st.session_state.password_correct = True
-        st.rerun()
-      else:
-        st.error("Incorrect password. Please try again.")
+  col_l, col_m, col_r = st.columns([1, 1.8, 1])
+  with col_m:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    with st.form("login_form"):
+      st.markdown("### 🔒 Zelqon Portal Access")
+      st.markdown(
+          "<p style='color: #64748b; font-size: 0.9rem;'>Enter your administrative credentials to continue.</p>",
+          unsafe_allow_html=True,
+      )
+      pwd = st.text_input("Access Password", type="password")
+      submit = st.form_submit_button("Authenticate")
+      if submit:
+        if pwd == "zelqon2026":
+          st.session_state.password_correct = True
+          st.rerun()
+        else:
+          st.error("Invalid credentials. Please verify your password.")
   return False
 
 if not check_password():
   st.stop()
 
-# --- DASHBOARD HEADER ---
-st.markdown("## 🌱 Zelqon Foods")
-st.markdown("**Staff Attendance & Monthly Payroll Hub** | *Fuvahmulah*")
-st.markdown("---")
+# --- HEADER SECTION ---
+st.markdown(
+    """
+    <div class="brand-hero">
+        <h1>ZELQON FOODS</h1>
+        <p>Operations Management & Payroll Terminal • Fuvahmulah Division</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Initialize default team and logs if empty
+# --- DATA INITIALIZATION ---
 if "staff" not in st.session_state:
   st.session_state.staff = pd.DataFrame({
       "Staff ID": ["ZF-001", "ZF-002"],
@@ -95,49 +190,73 @@ if "staff" not in st.session_state:
   })
 
 if "attendance" not in st.session_state:
-  st.session_state.attendance = pd.DataFrame(columns=[
-      "Date",
-      "Staff ID",
-      "Name",
-      "Status",
-      "Overtime Hours",
-      "Notes",
-  ])
+  st.session_state.attendance = pd.DataFrame(
+      columns=["Date", "Staff ID", "Name", "Status", "Overtime Hours", "Notes"]
+  )
 
-# --- NAVIGATION TABS ---
-tab1, tab2, tab3 = st.tabs(
-    ["📅 Attendance Logger", "👥 Staff Directory", "💰 Payroll Summary"]
-)
+# --- APPLICATION TABS ---
+tab1, tab2, tab3 = st.tabs([
+    "📋 Attendance Register",
+    "👥 Workforce Directory",
+    "💳 Payroll Ledger",
+])
 
+# ================= TAB 1: ATTENDANCE =================
 with tab1:
-  st.markdown("### Daily Attendance Entry")
+  m1, m2, m3 = st.columns(3)
+  with m1:
+    st.metric(
+        label="Active Workforce",
+        value=f"{len(st.session_state.staff)} Members",
+    )
+  with m2:
+    st.metric(
+        label="Logs Logged This Month",
+        value=f"{len(st.session_state.attendance)} Shifts",
+    )
+  with m3:
+    today_logged = (
+        len(
+            st.session_state.attendance[
+                st.session_state.attendance["Date"]
+                == str(datetime.date.today())
+            ]
+        )
+        if not st.session_state.attendance.empty
+        else 0
+    )
+    st.metric(label="Logged Today", value=f"{today_logged} Records")
+
+  st.markdown("<br>", unsafe_allow_html=True)
+
   if st.session_state.staff.empty:
-    st.warning("No staff found. Please add members in the Staff Directory tab.")
+    st.warning("Staff directory is empty. Add employees in Tab 2 to proceed.")
   else:
     with st.form("attendance_form", clear_on_submit=True):
-      col_date, col_staff = st.columns(2)
-      with col_date:
-        att_date = st.date_input("Work Date", datetime.date.today())
-      with col_staff:
+      st.markdown("#### Record Shift Attendance")
+      c_date, c_staff = st.columns(2)
+      with c_date:
+        att_date = st.date_input("Shift Date", datetime.date.today())
+      with c_staff:
         selected_staff = st.selectbox(
-            "Select Employee", st.session_state.staff["Name"].tolist()
+            "Employee Name", st.session_state.staff["Name"].tolist()
         )
 
-      col_stat, col_ot = st.columns(2)
-      with col_stat:
+      c_stat, c_ot = st.columns(2)
+      with c_stat:
         status = st.selectbox(
-            "Attendance Status",
+            "Shift Status",
             ["Present", "Half-Day", "Absent (Unpaid)", "Leave (Paid)"],
         )
-      with col_ot:
+      with c_ot:
         ot_hours = st.number_input(
-            "Overtime Hours (OT)", min_value=0.0, value=0.0, step=0.5
+            "Overtime Hours", min_value=0.0, value=0.0, step=0.5
         )
 
-      notes = st.text_input("Operational Notes / Remarks", "")
-      submitted = st.form_submit_button("Record Entry")
+      notes = st.text_input("Operational Notes / Batch Activity", "")
+      record_submit = st.form_submit_button("Log Shift Record")
 
-      if submitted:
+      if record_submit:
         staff_id = st.session_state.staff.loc[
             st.session_state.staff["Name"] == selected_staff, "Staff ID"
         ].values[0]
@@ -152,15 +271,16 @@ with tab1:
         st.session_state.attendance = pd.concat(
             [st.session_state.attendance, new_row], ignore_index=True
         )
-        st.success(f"Logged record for {selected_staff} on {att_date}.")
+        st.success(f"Shift recorded for {selected_staff} ({att_date}).")
 
-  st.markdown("#### Recent Shift Logs")
+  st.markdown("<br>#### Shift History Log", unsafe_allow_html=True)
   if not st.session_state.attendance.empty:
     st.dataframe(
         st.session_state.attendance.sort_values(by="Date", ascending=False),
         use_container_width=True,
+        hide_index=True,
     )
-    if st.button("Reset Attendance Records"):
+    if st.button("Reset Shift Records"):
       st.session_state.attendance = pd.DataFrame(
           columns=[
               "Date",
@@ -173,108 +293,134 @@ with tab1:
       )
       st.rerun()
   else:
-    st.info("No attendance entries registered yet.")
+    st.info("No shift logs entered yet.")
 
+# ================= TAB 2: STAFF DIRECTORY =================
 with tab2:
-  st.markdown("### Manage Team & Salaries")
-  st.dataframe(st.session_state.staff, use_container_width=True)
+  st.markdown("#### Active Team Profiles")
+  st.dataframe(st.session_state.staff, use_container_width=True, hide_index=True)
 
+  st.markdown("<br>", unsafe_allow_html=True)
   col_add, col_del = st.columns(2)
 
   with col_add:
-    with st.form("add_member_form", clear_on_submit=True):
-      st.markdown("#### Add New Team Member")
-      name_to_add = st.text_input("Full Name")
-      salary_to_add = st.number_input("Monthly Salary (MVR)", value=3000.0)
-      add_btn = st.form_submit_button("Register Staff")
-      if add_btn and name_to_add:
-        generated_id = f"ZF-00{len(st.session_state.staff) + 1}"
-        new_member = pd.DataFrame({
+    with st.form("add_staff_form", clear_on_submit=True):
+      st.markdown("#### Register New Staff")
+      new_name = st.text_input("Full Legal Name")
+      new_sal = st.number_input(
+          "Monthly Base Salary (MVR)", value=3000.0, step=250.0
+      )
+      add_action = st.form_submit_button("Register Team Member")
+
+      if add_action and new_name:
+        generated_id = f"ZF-{len(st.session_state.staff) + 1:03d}"
+        new_entry = pd.DataFrame({
             "Staff ID": [generated_id],
-            "Name": [name_to_add],
-            "Base Salary (MVR)": [salary_to_add],
+            "Name": [new_name.strip()],
+            "Base Salary (MVR)": [new_sal],
             "Standard Monthly Days": [26],
         })
         st.session_state.staff = pd.concat(
-            [st.session_state.staff, new_member], ignore_index=True
+            [st.session_state.staff, new_entry], ignore_index=True
         )
-        st.success(f"Registered {name_to_add} under {generated_id}.")
+        st.success(f"Staff member {new_name} added as {generated_id}.")
         st.rerun()
 
   with col_del:
-    with st.form("remove_member_form"):
+    with st.form("del_staff_form"):
       st.markdown("#### Remove Staff Member")
       if not st.session_state.staff.empty:
-        to_delete = st.selectbox(
-            "Select Staff to Delete", st.session_state.staff["Name"].tolist()
+        target_name = st.selectbox(
+            "Select Staff to Terminate/Remove",
+            st.session_state.staff["Name"].tolist(),
         )
-        delete_btn = st.form_submit_button("Delete Member")
-        if delete_btn:
+        remove_action = st.form_submit_button("Execute Removal")
+        if remove_action:
           st.session_state.staff = st.session_state.staff[
-              st.session_state.staff["Name"] != to_delete
+              st.session_state.staff["Name"] != target_name
           ].reset_index(drop=True)
-          st.success(f"Removed {to_delete} from active staff.")
+          st.success(f"Removed {target_name} from workforce records.")
           st.rerun()
       else:
-        st.info("No active staff to remove.")
-        st.form_submit_button("Delete Member", disabled=True)
+        st.info("Workforce directory is empty.")
+        st.form_submit_button("Execute Removal", disabled=True)
 
+# ================= TAB 3: PAYROLL LEDGER =================
 with tab3:
-  st.markdown("### Monthly Payroll Calculation")
+  st.markdown("#### Monthly Disbursement Ledger")
 
   if st.session_state.attendance.empty:
-    st.warning("Log daily attendance in Tab 1 to compute monthly payroll.")
+    st.info(
+        "Attendance ledger is currently blank. Log daily shifts to calculate payouts."
+    )
   else:
-    df_att = st.session_state.attendance.copy()
+    df_logs = st.session_state.attendance.copy()
 
-    def get_day_val(status_val):
-      if status_val in ["Present", "Leave (Paid)"]:
+    def get_unit_day(val):
+      if val in ["Present", "Leave (Paid)"]:
         return 1.0
-      elif status_val == "Half-Day":
+      elif val == "Half-Day":
         return 0.5
       return 0.0
 
-    df_att["Day_Value"] = df_att["Status"].apply(get_day_val)
-    payroll_summary = []
+    df_logs["Day_Value"] = df_logs["Status"].apply(get_unit_day)
+    payroll_records = []
 
-    for _, row in st.session_state.staff.iterrows():
-      s_id = row["Staff ID"]
-      s_name = row["Name"]
-      base_sal = row["Base Salary (MVR)"]
-      std_days = row["Standard Monthly Days"]
+    for _, emp in st.session_state.staff.iterrows():
+      emp_id = emp["Staff ID"]
+      emp_name = emp["Name"]
+      base_salary = emp["Base Salary (MVR)"]
+      std_days = emp["Standard Monthly Days"]
 
-      staff_records = df_att[df_att["Staff ID"] == s_id]
-      days_worked = staff_records["Day_Value"].sum()
-      total_ot = staff_records["Overtime Hours"].sum()
+      sub_logs = df_logs[df_logs["Staff ID"] == emp_id]
+      worked_days = sub_logs["Day_Value"].sum()
+      ot_hours_total = sub_logs["Overtime Hours"].sum()
 
-      # Overtime formula: (Base / Std Days / 8 hrs) * 1.25 multiplier
-      hourly_rate = (base_sal / std_days) / 8
-      ot_amount = total_ot * hourly_rate * 1.25
+      # Hourly rate = (Base Salary / 26 days) / 8 hours
+      hourly = (base_salary / std_days) / 8.0 if std_days > 0 else 0.0
+      ot_pay = ot_hours_total * (hourly * 1.25)
 
-      # Pro-rated base calculation for unexcused absence
-      effective_base = base_sal
-      if days_worked < std_days and std_days > 0:
-        effective_base = (base_sal / std_days) * days_worked
+      # Pro-rated deduction for unattended standard days
+      adjusted_base = base_salary
+      if worked_days < std_days and std_days > 0:
+        adjusted_base = (base_salary / std_days) * worked_days
 
-      total_net = effective_base + ot_amount
+      net_disbursement = adjusted_base + ot_pay
 
-      payroll_summary.append({
-          "Staff ID": s_id,
-          "Name": s_name,
-          "Base Salary (MVR)": base_sal,
-          "Days Worked": days_worked,
-          "Total OT Hours": total_ot,
-          "OT Pay (MVR)": round(ot_amount, 2),
-          "Net Payout (MVR)": round(total_net, 2),
+      payroll_records.append({
+          "Staff ID": emp_id,
+          "Employee": emp_name,
+          "Base (MVR)": base_salary,
+          "Units Worked": worked_days,
+          "OT Hours": ot_hours_total,
+          "OT Payout (MVR)": round(ot_pay, 2),
+          "Net Payout (MVR)": round(net_disbursement, 2),
       })
 
-    summary_df = pd.DataFrame(payroll_summary)
-    st.dataframe(summary_df, use_container_width=True)
+    payroll_df = pd.DataFrame(payroll_records)
 
-    csv_data = summary_df.to_csv(index=False).encode("utf-8")
+    # Executive Summary Metrics
+    total_budget = payroll_df["Net Payout (MVR)"].sum()
+    total_ot_paid = payroll_df["OT Payout (MVR)"].sum()
+
+    p1, p2 = st.columns(2)
+    with p1:
+      st.metric(
+          label="Total Monthly Payroll Commitment",
+          value=f"{total_budget:,.2f} MVR",
+      )
+    with p2:
+      st.metric(
+          label="Total Overtime Allocation", value=f"{total_ot_paid:,.2f} MVR"
+      )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.dataframe(payroll_df, use_container_width=True, hide_index=True)
+
+    csv_export = payroll_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Export Monthly Payroll (CSV)",
-        data=csv_data,
-        file_name=f"zelqon_payroll_{datetime.date.today().strftime('%Y_%m')}.csv",
+        label="📥 Export Certified Payroll Sheet (CSV)",
+        data=csv_export,
+        file_name=f"zelqon_disbursement_{datetime.date.today().strftime('%Y_%m')}.csv",
         mime="text/csv",
     )
