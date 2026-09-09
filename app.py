@@ -5,10 +5,49 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# --- Page Configuration ---
+# --- Page Configuration & CSS Styling ---
 st.set_page_config(
-    page_title="Zelqon Foods | HR & Payroll", page_icon="🍳", layout="wide"
+    page_title="Zelqon HR & Payroll", page_icon="🏢", layout="wide"
 )
+
+# Custom Corporate CSS
+st.markdown("""
+    <style>
+        /* Hide default Streamlit header, footer, and menu for a clean app feel */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        
+        /* Adjust top padding since header is hidden */
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        /* Custom Title Typography */
+        .zelqon-title {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1E3A8A; /* Deep Corporate Blue */
+            margin-bottom: 0px;
+        }
+        .zelqon-subtitle {
+            font-size: 1rem;
+            color: #64748B;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        /* Metric numbers styling */
+        div[data-testid="stMetricValue"] {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0F172A;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # --- User Authentication System ---
 USER_CREDENTIALS = {
@@ -48,33 +87,36 @@ def verify_login(username, password):
 
 # --- Login Screen Gate ---
 if not st.session_state.auth_status:
-  col_pad_left, col_login, col_pad_right = st.columns([1, 2, 1])
+  st.write("")
+  st.write("")
+  st.write("")
+  
+  col_pad_left, col_login, col_pad_right = st.columns([1, 1.2, 1])
 
   with col_login:
-    st.write("")
-    st.write("")
-    st.markdown("### 🔐 Zelqon Foods HR Portal")
-    st.caption("Fuvahmulah, Maldives | Secure Authentication Required")
+    with st.container(border=True):
+      st.markdown("<h2 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>Zelqon Foods</h2>", unsafe_allow_html=True)
+      st.markdown("<p style='text-align: center; color: #64748B; margin-top: 0;'>Secure HR & Operations Portal</p>", unsafe_allow_html=True)
+      st.divider()
+      
+      with st.form("zelqon_login_form"):
+        login_user = st.text_input("Username", placeholder="Enter assigned username")
+        login_pass = st.text_input("Password", type="password", placeholder="Enter secure password")
+        st.write("")
+        submit_login = st.form_submit_button(
+            "Authenticate Session", type="primary", use_container_width=True
+        )
 
-    with st.form("zelqon_login_form"):
-      login_user = st.text_input(
-          "Username", placeholder="e.g. admin or kitchen"
-      )
-      login_pass = st.text_input("Password", type="password")
-      submit_login = st.form_submit_button(
-          "Sign In to Operations", type="primary", use_container_width=True
-      )
-
-      if submit_login:
-        success, role, name = verify_login(login_user, login_pass)
-        if success:
-          st.session_state.auth_status = True
-          st.session_state.current_user = login_user.strip().lower()
-          st.session_state.current_role = role
-          st.session_state.current_name = name
-          st.rerun()
-        else:
-          st.error("Invalid username or password. Please check your credentials.")
+        if submit_login:
+          success, role, name = verify_login(login_user, login_pass)
+          if success:
+            st.session_state.auth_status = True
+            st.session_state.current_user = login_user.strip().lower()
+            st.session_state.current_role = role
+            st.session_state.current_name = name
+            st.rerun()
+          else:
+            st.error("Authentication failed. Please verify credentials.")
 
   st.stop()  # Halts execution so unauthenticated users cannot view data or sheets
 
@@ -83,7 +125,6 @@ if not st.session_state.auth_status:
 # =========================================================
 
 conn = st.connection("gsheets", type=GSheetsConnection)
-
 
 def load_staff_data():
   try:
@@ -408,29 +449,30 @@ def generate_payslip_bytes(
 
 # --- Sidebar Setup ---
 with st.sidebar:
-  st.title("Zelqon Foods")
-  st.caption("Fuvahmulah, Maldives | Semi-Cooked Division")
+  st.markdown("### 🏢 Zelqon Foods")
+  st.caption("Operations & HR Control Panel")
   st.divider()
 
-  # Active User Badge & Sign Out
-  st.markdown(f"👤 **User:** {st.session_state.current_name}")
-  st.markdown(f"🏷️ **Access Level:** `{st.session_state.current_role}`")
-
-  if st.button("🚪 Sign Out", use_container_width=True, type="secondary"):
-    st.session_state.auth_status = False
-    st.session_state.current_user = None
-    st.session_state.current_role = None
-    st.session_state.current_name = None
-    st.rerun()
+  # Active User Badge
+  with st.container(border=True):
+    st.markdown(f"👤 **Logged In As:**<br>{st.session_state.current_name}", unsafe_allow_html=True)
+    st.markdown(f"🛡️ **Clearance:** `{st.session_state.current_role}`")
+    st.write("")
+    if st.button("🚪 Secure Sign Out", use_container_width=True, type="secondary"):
+      st.session_state.auth_status = False
+      st.session_state.current_user = None
+      st.session_state.current_role = None
+      st.session_state.current_name = None
+      st.rerun()
 
   # Backups reserved exclusively for Admins
   if st.session_state.current_role == "Admin":
     st.divider()
-    st.subheader("💾 Offline Database Backup")
+    st.markdown("#### 💾 Database Backups")
     staff_backup = load_staff_data()
     if not staff_backup.empty:
       st.download_button(
-          label="📥 Download Staff (CSV)",
+          label="📥 Export Staff Registry (CSV)",
           data=staff_backup.to_csv(index=False).encode("utf-8"),
           file_name=f"Zelqon_Staff_Backup_{date.today()}.csv",
           mime="text/csv",
@@ -439,374 +481,389 @@ with st.sidebar:
     att_backup = load_attendance_data()
     if not att_backup.empty:
       st.download_button(
-          label="📥 Download Attendance (CSV)",
+          label="📥 Export Attendance Logs (CSV)",
           data=att_backup.to_csv(index=False).encode("utf-8"),
           file_name=f"Zelqon_Attendance_Backup_{date.today()}.csv",
           mime="text/csv",
           use_container_width=True,
       )
 
-# --- App Navigation by Role ---
-st.title("Zelqon Foods Operations & Payroll")
+# --- App Header & Navigation ---
+st.markdown('<p class="zelqon-title">Zelqon Foods HR Portal</p>', unsafe_allow_html=True)
+st.markdown('<p class="zelqon-subtitle">Fuvahmulah City, Maldives | Internal Operations System</p>', unsafe_allow_html=True)
 
 if st.session_state.current_role == "Admin":
   tab_att, tab_dir, tab_leave, tab_pay = st.tabs([
-      "📅 Daily Attendance",
+      "🕒 Daily Attendance",
       "👥 Workforce Directory",
-      "🌴 Leave Management",
-      "💰 Payroll & Payslips",
+      "📊 Leave Quotas",
+      "💼 Payroll Processing",
   ])
 else:
-  tab_att, = st.tabs(["📅 Daily Attendance"])
-  st.caption("Kitchen Staff Mode: Daily logs enabled. Management modules hidden.")
+  tab_att, = st.tabs(["🕒 Daily Attendance & Shifts"])
+  st.info("ℹ️ **Staff Mode Active:** Daily logging enabled. Management and Financial modules are secured.")
 
 # =========================================================
 # TAB 1: DAILY ATTENDANCE AND SHIFT LOGGING
 # =========================================================
 with tab_att:
-  st.subheader("Daily Attendance and Shift Logging")
-
+  
   staff_df = load_staff_data()
   if staff_df.empty or "Name" not in staff_df.columns:
-    st.warning("No staff members registered in the database yet.")
+    st.warning("⚠️ System is empty. Please register staff in the Workforce Directory first.")
   else:
-    with st.expander("⚡ Batch Action: Mark All Active Staff 'Present' Today"):
-      batch_col1, batch_col2 = st.columns([2, 1])
-      with batch_col1:
-        batch_date = st.date_input(
-            "Batch Attendance Date",
-            value=date.today(),
-            key="batch_att_date",
+    # Batch Action Card
+    with st.container(border=True):
+      with st.expander("⚡ Batch Action: Mark All Active Staff 'Present'"):
+        batch_col1, batch_col2 = st.columns([2, 1])
+        with batch_col1:
+          batch_date = st.date_input(
+              "Select Attendance Date",
+              value=date.today(),
+              key="batch_att_date",
+          )
+        with batch_col2:
+          st.write("")
+          st.write("")
+          if st.button("Commit Batch Present", type="primary", use_container_width=True):
+            current_att = load_attendance_data()
+            new_batch_rows = []
+            for _, emp in staff_df.iterrows():
+              new_batch_rows.append({
+                  "Date": str(batch_date),
+                  "Staff ID": emp["Staff ID"],
+                  "Name": emp["Name"],
+                  "Station": emp.get("Role", "Semi-Cooked Processing"),
+                  "Status": "Present",
+                  "Overtime Hours": 0.0,
+                  "Notes": "Auto Batch Check-In",
+              })
+            batch_df = pd.DataFrame(new_batch_rows)
+            updated_att = (
+                pd.concat([current_att, batch_df], ignore_index=True)
+                if not current_att.empty
+                else batch_df
+            )
+            conn.update(worksheet="Attendance", data=updated_att)
+            st.cache_data.clear()
+            st.success(
+                f"Successfully logged {len(staff_df)} employees as Present for {batch_date}."
+            )
+            st.rerun()
+
+    st.write("") # Spacer
+    
+    # Individual Entry Card
+    with st.container(border=True):
+      st.markdown("#### 📝 Record Individual Shift")
+      st.caption("Log daily attendance, half-days, leave, or unexcused absences.")
+      with st.form("single_attendance_form", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+          shift_date = st.date_input("Shift Date", value=date.today())
+        with c2:
+          selected_emp = st.selectbox("Staff Member", options=staff_df["Name"])
+        with c3:
+          station_options = [
+              "Semi-Cooked Processing",
+              "Packaging & Sealing",
+              "Fuvahmulah Distribution",
+              "Kitchen Cleaning & Prep",
+          ]
+          selected_station = st.selectbox(
+              "Production Station", options=station_options
+          )
+
+        c4, c5 = st.columns(2)
+        with c4:
+          status_options = [
+              "Present",
+              "Half Day",
+              "Annual Leave",
+              "Sick Leave",
+              "Family Leave",
+              "Unexcused Absent",
+          ]
+          status = st.selectbox("Duty Status", options=status_options)
+        with c5:
+          ot_hours = st.number_input(
+              "Overtime Worked (Hours)",
+              min_value=0.0,
+              max_value=12.0,
+              value=0.0,
+              step=0.5,
+          )
+
+        shift_notes = st.text_input("Operational Notes (Optional)")
+        submit_shift = st.form_submit_button(
+            "💾 Commit Shift Record", type="primary"
         )
-      with batch_col2:
-        st.write("")
-        st.write("")
-        if st.button("Mark All Present", type="primary"):
+
+        if submit_shift:
           current_att = load_attendance_data()
-          new_batch_rows = []
-          for _, emp in staff_df.iterrows():
-            new_batch_rows.append({
-                "Date": str(batch_date),
-                "Staff ID": emp["Staff ID"],
-                "Name": emp["Name"],
-                "Station": emp.get("Role", "Semi-Cooked Processing"),
-                "Status": "Present",
-                "Overtime Hours": 0.0,
-                "Notes": "Auto Batch Check-In",
-            })
-          batch_df = pd.DataFrame(new_batch_rows)
+          emp_id = (
+              staff_df[staff_df["Name"] == selected_emp]["Staff ID"].values[0]
+              if not staff_df[staff_df["Name"] == selected_emp].empty
+              else "ZF-000"
+          )
+
+          new_entry = pd.DataFrame([{
+              "Date": str(shift_date),
+              "Staff ID": str(emp_id),
+              "Name": str(selected_emp),
+              "Station": str(selected_station),
+              "Status": str(status),
+              "Overtime Hours": float(ot_hours),
+              "Notes": str(shift_notes),
+          }])
+
           updated_att = (
-              pd.concat([current_att, batch_df], ignore_index=True)
+              pd.concat([current_att, new_entry], ignore_index=True)
               if not current_att.empty
-              else batch_df
+              else new_entry
           )
           conn.update(worksheet="Attendance", data=updated_att)
           st.cache_data.clear()
-          st.success(
-              f"Logged Present for all {len(staff_df)} members on {batch_date}!"
-          )
+          st.success(f"Shift successfully recorded for {selected_emp}.")
           st.rerun()
 
-    st.markdown("#### Individual Shift Entry")
-    with st.form("single_attendance_form", clear_on_submit=True):
-      c1, c2, c3 = st.columns(3)
-      with c1:
-        shift_date = st.date_input("Shift Date", value=date.today())
-      with c2:
-        selected_emp = st.selectbox("Staff Member", options=staff_df["Name"])
-      with c3:
-        station_options = [
-            "Semi-Cooked Processing",
-            "Packaging & Sealing",
-            "Fuvahmulah Distribution",
-            "Kitchen Cleaning & Prep",
-        ]
-        selected_station = st.selectbox(
-            "Production Station", options=station_options
-        )
+    st.write("") # Spacer
 
-      c4, c5 = st.columns(2)
-      with c4:
-        status_options = [
-            "Present",
-            "Half Day",
-            "Annual Leave",
-            "Sick Leave",
-            "Family Leave",
-            "Unexcused Absent",
-        ]
-        status = st.selectbox("Duty Status", options=status_options)
-      with c5:
-        ot_hours = st.number_input(
-            "Overtime Worked (Hours)",
-            min_value=0.0,
-            max_value=12.0,
-            value=0.0,
-            step=0.5,
-        )
+    # Manage Shifts Card
+    with st.container(border=True):
+      st.markdown("#### 🛠️ Manage Logged Shifts")
+      st.caption("Review recent entries or delete erroneous logs from the cloud database.")
+      att_records = load_attendance_data()
+      if not att_records.empty:
+        valid_att = att_records.dropna(subset=["Date", "Name"]).copy()
+        if not valid_att.empty:
+          st.dataframe(valid_att, use_container_width=True, hide_index=True)
 
-      shift_notes = st.text_input("Shift Operational Notes")
-      submit_shift = st.form_submit_button(
-          "💾 Record Shift Entry", type="primary"
-      )
+          shift_options = {
+              f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} -"
+              f" {row['Overtime Hours']}h OT": idx
+              for idx, row in valid_att.iterrows()
+          }
 
-      if submit_shift:
-        current_att = load_attendance_data()
-        emp_id = (
-            staff_df[staff_df["Name"] == selected_emp]["Staff ID"].values[0]
-            if not staff_df[staff_df["Name"] == selected_emp].empty
-            else "ZF-000"
-        )
-
-        new_entry = pd.DataFrame([{
-            "Date": str(shift_date),
-            "Staff ID": str(emp_id),
-            "Name": str(selected_emp),
-            "Station": str(selected_station),
-            "Status": str(status),
-            "Overtime Hours": float(ot_hours),
-            "Notes": str(shift_notes),
-        }])
-
-        updated_att = (
-            pd.concat([current_att, new_entry], ignore_index=True)
-            if not current_att.empty
-            else new_entry
-        )
-        conn.update(worksheet="Attendance", data=updated_att)
-        st.cache_data.clear()
-        st.success(f"Shift recorded for {selected_emp} on {shift_date}.")
-        st.rerun()
-
-  st.divider()
-
-  st.subheader("Manage Logged Shifts")
-  att_records = load_attendance_data()
-  if not att_records.empty:
-    valid_att = att_records.dropna(subset=["Date", "Name"]).copy()
-    if not valid_att.empty:
-      st.dataframe(valid_att, use_container_width=True, hide_index=True)
-
-      shift_options = {
-          f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} -"
-          f" {row['Overtime Hours']}h OT": idx
-          for idx, row in valid_att.iterrows()
-      }
-
-      del_col1, del_col2 = st.columns([3, 1])
-      with del_col1:
-        selected_shift_to_delete = st.selectbox(
-            "Select record to remove:",
-            options=list(shift_options.keys()),
-            key="delete_shift_select",
-        )
-      with del_col2:
-        st.write("")
-        st.write("")
-        if st.button("🗑️ Delete Shift", type="secondary"):
-          row_to_drop = shift_options[selected_shift_to_delete]
-          remaining_att = att_records.drop(index=row_to_drop).reset_index(
-              drop=True
-          )
-
-          if remaining_att.empty:
-            remaining_att = pd.DataFrame(
-                columns=[
-                    "Date",
-                    "Staff ID",
-                    "Name",
-                    "Station",
-                    "Status",
-                    "Overtime Hours",
-                    "Notes",
-                ]
+          del_col1, del_col2 = st.columns([3, 1])
+          with del_col1:
+            selected_shift_to_delete = st.selectbox(
+                "Select historical record to void:",
+                options=list(shift_options.keys()),
+                key="delete_shift_select",
             )
+          with del_col2:
+            st.write("")
+            st.write("")
+            if st.button("🗑️ Void Record", type="secondary", use_container_width=True):
+              row_to_drop = shift_options[selected_shift_to_delete]
+              remaining_att = att_records.drop(index=row_to_drop).reset_index(
+                  drop=True
+              )
 
-          conn.update(worksheet="Attendance", data=remaining_att)
-          st.cache_data.clear()
-          st.success("Record deleted successfully.")
-          st.rerun()
+              if remaining_att.empty:
+                remaining_att = pd.DataFrame(
+                    columns=[
+                        "Date",
+                        "Staff ID",
+                        "Name",
+                        "Station",
+                        "Status",
+                        "Overtime Hours",
+                        "Notes",
+                    ]
+                )
+
+              conn.update(worksheet="Attendance", data=remaining_att)
+              st.cache_data.clear()
+              st.success("Record voided and database synced.")
+              st.rerun()
+      else:
+        st.info("No attendance records have been logged yet.")
 
 # =========================================================
 # TAB 2: WORKFORCE DIRECTORY (ADMIN ONLY)
 # =========================================================
 if st.session_state.current_role == "Admin":
   with tab_dir:
-    st.subheader("Workforce Management & Job Roles")
     dir_col1, dir_col2 = st.columns([1, 1])
 
     with dir_col1:
-      st.markdown("#### Add New Team Member")
-      staff_df = load_staff_data()
+      with st.container(border=True):
+        st.markdown("#### ➕ Register Employee")
+        staff_df = load_staff_data()
 
-      next_id_num = 1
-      if not staff_df.empty and "Staff ID" in staff_df.columns:
-        existing_ids = staff_df["Staff ID"].dropna().astype(str).tolist()
-        numeric_ids = [
-            int(x.replace("ZF-", ""))
-            for x in existing_ids
-            if x.startswith("ZF-") and x.replace("ZF-", "").isdigit()
-        ]
-        if numeric_ids:
-          next_id_num = max(numeric_ids) + 1
-      auto_id = f"ZF-{next_id_num:03d}"
+        next_id_num = 1
+        if not staff_df.empty and "Staff ID" in staff_df.columns:
+          existing_ids = staff_df["Staff ID"].dropna().astype(str).tolist()
+          numeric_ids = [
+              int(x.replace("ZF-", ""))
+              for x in existing_ids
+              if x.startswith("ZF-") and x.replace("ZF-", "").isdigit()
+          ]
+          if numeric_ids:
+            next_id_num = max(numeric_ids) + 1
+        auto_id = f"ZF-{next_id_num:03d}"
 
-      with st.form("new_employee_form", clear_on_submit=True):
-        st.text_input("Assigned Staff ID", value=auto_id, disabled=True)
-        new_name = st.text_input("Full Legal Name")
-        new_role = st.selectbox(
-            "Primary Kitchen Assignment",
-            options=[
-                "Semi-Cooked Processing",
-                "Packaging & Quality",
-                "Fuvahmulah Delivery & Sales",
-                "Kitchen Supervision",
-            ],
-        )
-        new_salary = st.number_input(
-            "Base Monthly Salary (MVR)",
-            min_value=1000.0,
-            value=5000.0,
-            step=250.0,
-        )
-        new_days = st.number_input(
-            "Standard Work Days / Month", min_value=15, max_value=31, value=26
-        )
-        new_bank = st.text_input(
-            "BML Account Number (Optional)",
-            placeholder="e.g. 7730000123456",
-        )
-        new_pension = st.selectbox(
-            "Enroll in Maldives Retirement Pension (MRPS)?",
-            options=["No", "Yes"],
-        )
+        with st.form("new_employee_form", clear_on_submit=True):
+          st.text_input("System Assigned ID", value=auto_id, disabled=True)
+          new_name = st.text_input("Full Legal Name")
+          new_role = st.selectbox(
+              "Primary Operational Assignment",
+              options=[
+                  "Semi-Cooked Processing",
+                  "Packaging & Quality",
+                  "Fuvahmulah Delivery & Sales",
+                  "Kitchen Supervision",
+              ],
+          )
+          new_salary = st.number_input(
+              "Base Monthly Salary (MVR)",
+              min_value=1000.0,
+              value=5000.0,
+              step=250.0,
+          )
+          new_days = st.number_input(
+              "Contracted Work Days / Month", min_value=15, max_value=31, value=26
+          )
+          new_bank = st.text_input(
+              "Bank Account Number (Optional)",
+              placeholder="e.g. BML 7730000123456",
+          )
+          new_pension = st.selectbox(
+              "Enroll in Maldives Pension (MRPS)?",
+              options=["No", "Yes"],
+          )
 
-        submit_new_staff = st.form_submit_button(
-            "💾 Register Staff Member", type="primary"
-        )
+          submit_new_staff = st.form_submit_button(
+              "💾 Register to Database", type="primary"
+          )
 
-        if submit_new_staff:
-          if not new_name.strip():
-            st.error("Employee name is required.")
-          else:
-            new_row = pd.DataFrame([{
-                "Staff ID": auto_id,
-                "Name": new_name.strip(),
-                "Role": new_role,
-                "Base Salary (MVR)": float(new_salary),
-                "Standard Monthly Days": int(new_days),
-                "Bank Account": str(new_bank).strip(),
-                "Pension Enrolled": str(new_pension),
-            }])
-            updated_staff = (
-                pd.concat([staff_df, new_row], ignore_index=True)
-                if not staff_df.empty
-                else new_row
-            )
-            conn.update(worksheet="Staff", data=updated_staff)
-            st.cache_data.clear()
-            st.success(f"Registered {new_name} ({auto_id}) successfully!")
-            st.rerun()
+          if submit_new_staff:
+            if not new_name.strip():
+              st.error("Employee name is required to create a profile.")
+            else:
+              new_row = pd.DataFrame([{
+                  "Staff ID": auto_id,
+                  "Name": new_name.strip(),
+                  "Role": new_role,
+                  "Base Salary (MVR)": float(new_salary),
+                  "Standard Monthly Days": int(new_days),
+                  "Bank Account": str(new_bank).strip(),
+                  "Pension Enrolled": str(new_pension),
+              }])
+              updated_staff = (
+                  pd.concat([staff_df, new_row], ignore_index=True)
+                  if not staff_df.empty
+                  else new_row
+              )
+              conn.update(worksheet="Staff", data=updated_staff)
+              st.cache_data.clear()
+              st.success(f"Profile created for {new_name} ({auto_id}).")
+              st.rerun()
 
     with dir_col2:
-      st.markdown("#### Active Team Directory")
-      staff_df = load_staff_data()
-      if not staff_df.empty:
-        st.dataframe(staff_df, use_container_width=True, hide_index=True)
+      with st.container(border=True):
+        st.markdown("#### 📋 Active Personnel")
+        staff_df = load_staff_data()
+        if not staff_df.empty:
+          st.dataframe(staff_df, use_container_width=True, hide_index=True)
 
-        st.markdown("#### Remove Staff Member")
-        staff_to_delete = st.selectbox(
-            "Select employee to remove:",
-            options=staff_df["Name"].tolist(),
-            key="delete_staff_box",
-        )
-        if st.button("⚠️ Delete Member from Cloud", type="secondary"):
-          remaining = staff_df[
-              staff_df["Name"] != staff_to_delete
-          ].reset_index(drop=True)
-          if remaining.empty:
-            remaining = pd.DataFrame(
-                columns=[
-                    "Staff ID",
-                    "Name",
-                    "Role",
-                    "Base Salary (MVR)",
-                    "Standard Monthly Days",
-                    "Bank Account",
-                    "Pension Enrolled",
-                ]
-            )
-          conn.update(worksheet="Staff", data=remaining)
-          st.cache_data.clear()
-          st.warning(f"Removed {staff_to_delete} from Zelqon Foods database.")
-          st.rerun()
-      else:
-        st.info("Directory is currently empty.")
+          st.divider()
+          st.markdown("##### Remove Employee Record")
+          staff_to_delete = st.selectbox(
+              "Select employee for termination/removal:",
+              options=staff_df["Name"].tolist(),
+              key="delete_staff_box",
+          )
+          if st.button("⚠️ Purge from System", type="secondary"):
+            remaining = staff_df[
+                staff_df["Name"] != staff_to_delete
+            ].reset_index(drop=True)
+            if remaining.empty:
+              remaining = pd.DataFrame(
+                  columns=[
+                      "Staff ID",
+                      "Name",
+                      "Role",
+                      "Base Salary (MVR)",
+                      "Standard Monthly Days",
+                      "Bank Account",
+                      "Pension Enrolled",
+                  ]
+              )
+            conn.update(worksheet="Staff", data=remaining)
+            st.cache_data.clear()
+            st.warning(f"Employee {staff_to_delete} has been purged from the database.")
+            st.rerun()
+        else:
+          st.info("The workforce directory is currently empty.")
 
 # =========================================================
 # TAB 3: LEAVE MANAGEMENT (ADMIN ONLY)
 # =========================================================
 if st.session_state.current_role == "Admin":
   with tab_leave:
-    st.subheader("Employee Leave & Quota Tracking")
-    current_year = date.today().year
-    st.caption(f"Maldives Employment Act Legal Quotas for the {current_year} calendar year")
-    
-    staff_df = load_staff_data()
-    att_df = load_attendance_data()
-    
-    if staff_df.empty:
-      st.info("Please register team members in the Workforce Directory first.")
-    else:
-      if not att_df.empty and "Date" in att_df.columns:
-        att_df["Parsed_Date"] = pd.to_datetime(att_df["Date"], errors="coerce")
-        yearly_att = att_df[att_df["Parsed_Date"].dt.year == current_year]
+    with st.container(border=True):
+      st.markdown("#### 📊 Employee Leave Tracking")
+      current_year = date.today().year
+      st.caption(f"Tracking utilization against Maldives Employment Act legal quotas for **{current_year}**.")
+      
+      staff_df = load_staff_data()
+      att_df = load_attendance_data()
+      
+      if staff_df.empty:
+        st.info("No personnel found. Register team members first.")
       else:
-        yearly_att = pd.DataFrame()
-        
-      leave_records = []
-      
-      for _, emp in staff_df.iterrows():
-        name = emp["Name"]
-        ann_used, sick_used, fam_used = 0, 0, 0
-        
-        if not yearly_att.empty:
-          emp_att = yearly_att[yearly_att["Name"] == name]
-          ann_used = len(emp_att[emp_att["Status"] == "Annual Leave"])
-          sick_used = len(emp_att[emp_att["Status"] == "Sick Leave"])
-          fam_used = len(emp_att[emp_att["Status"] == "Family Leave"])
+        if not att_df.empty and "Date" in att_df.columns:
+          att_df["Parsed_Date"] = pd.to_datetime(att_df["Date"], errors="coerce")
+          yearly_att = att_df[att_df["Parsed_Date"].dt.year == current_year]
+        else:
+          yearly_att = pd.DataFrame()
           
-        leave_records.append({
-            "Name": name,
-            "Annual Rem": max(0, 30 - ann_used),
-            "Sick Rem": max(0, 30 - sick_used),
-            "Family Rem": max(0, 10 - fam_used),
-            "Annual Used": ann_used,
-            "Sick Used": sick_used,
-            "Family Used": fam_used,
-        })
+        leave_records = []
         
-      leave_df = pd.DataFrame(leave_records)
-      
-      st.dataframe(
-          leave_df,
-          use_container_width=True,
-          hide_index=True,
-          column_config={
-              "Name": st.column_config.TextColumn("Staff Member"),
-              "Annual Rem": st.column_config.ProgressColumn(
-                  "Annual Remaining (30)", format="%d days", min_value=0, max_value=30
-              ),
-              "Sick Rem": st.column_config.ProgressColumn(
-                  "Sick Remaining (30)", format="%d days", min_value=0, max_value=30
-              ),
-              "Family Rem": st.column_config.ProgressColumn(
-                  "Family Remaining (10)", format="%d days", min_value=0, max_value=10
-              ),
-          }
-      )
-      
-      st.info("💡 **How this works:** The app automatically counts the shift records logged in the Attendance tab for the current year. When you log someone as 'Sick Leave', it deducts from their yearly balance automatically without needing extra manual entry.")
+        for _, emp in staff_df.iterrows():
+          name = emp["Name"]
+          ann_used, sick_used, fam_used = 0, 0, 0
+          
+          if not yearly_att.empty:
+            emp_att = yearly_att[yearly_att["Name"] == name]
+            ann_used = len(emp_att[emp_att["Status"] == "Annual Leave"])
+            sick_used = len(emp_att[emp_att["Status"] == "Sick Leave"])
+            fam_used = len(emp_att[emp_att["Status"] == "Family Leave"])
+            
+          leave_records.append({
+              "Name": name,
+              "Annual Rem": max(0, 30 - ann_used),
+              "Sick Rem": max(0, 30 - sick_used),
+              "Family Rem": max(0, 10 - fam_used),
+              "Annual Used": ann_used,
+              "Sick Used": sick_used,
+              "Family Used": fam_used,
+          })
+          
+        leave_df = pd.DataFrame(leave_records)
+        
+        st.dataframe(
+            leave_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Name": st.column_config.TextColumn("Personnel"),
+                "Annual Rem": st.column_config.ProgressColumn(
+                    "Annual Remaining (30)", format="%d days", min_value=0, max_value=30
+                ),
+                "Sick Rem": st.column_config.ProgressColumn(
+                    "Sick Remaining (30)", format="%d days", min_value=0, max_value=30
+                ),
+                "Family Rem": st.column_config.ProgressColumn(
+                    "Family Remaining (10)", format="%d days", min_value=0, max_value=10
+                ),
+            }
+        )
+        
+        st.info("💡 **Automation Logic:** The system scans the shift database for the current calendar year. Categorizing a shift as 'Sick Leave' automatically debits the employee's balance. Balances automatically reset to maximum on January 1st.")
 
 
 # =========================================================
@@ -814,90 +871,84 @@ if st.session_state.current_role == "Admin":
 # =========================================================
 if st.session_state.current_role == "Admin":
   with tab_pay:
-    st.subheader("Maldives Compliant Payroll Calculation")
-
     staff_df = load_staff_data()
     att_df = load_attendance_data()
 
     if staff_df.empty:
-      st.info("Please register team members in the Workforce Directory first.")
+      st.info("Awaiting personnel registration to initialize payroll engine.")
     else:
-      p_col1, p_col2, p_col3 = st.columns(3)
-      with p_col1:
-        months_list = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-        ]
-        active_m_idx = datetime.now().month - 1
-        selected_month_name = st.selectbox(
-            "Payroll Month", options=months_list, index=active_m_idx
-        )
-        selected_month_num = months_list.index(selected_month_name) + 1
-      with p_col2:
-        selected_year = st.selectbox(
-            "Payroll Year", options=[2025, 2026, 2027], index=1
-        )
-      with p_col3:
-        st.write("")
-        st.write("")
-        include_ramazan = st.checkbox(
-            "Apply Legal Ramazan Allowance (MVR 3,000)", value=False
-        )
-
-      period_label = f"{selected_month_name} {selected_year}"
-
-      if not att_df.empty and "Date" in att_df.columns:
-        att_df["Parsed_Date"] = pd.to_datetime(
-            att_df["Date"], errors="coerce"
-        )
-        period_att = att_df[
-            (att_df["Parsed_Date"].dt.month == selected_month_num)
-            & (att_df["Parsed_Date"].dt.year == selected_year)
-        ]
-        yearly_att = att_df[att_df["Parsed_Date"].dt.year == selected_year]
-      else:
-        period_att = pd.DataFrame()
-        yearly_att = pd.DataFrame()
-
-      st.divider()
-      st.markdown("#### Monthly Adjustments (Advances & Production Bonuses)")
-      st.caption(
-          "Enter one-off island advances or kitchen bonuses for this month."
-      )
-
-      advances_dict = {}
-      bonuses_dict = {}
-
-      for idx, emp in staff_df.iterrows():
-        emp_name = emp["Name"]
-        with st.expander(f"Adjustments: {emp_name}"):
-          adv_val = st.number_input(
-              f"Salary Advance Deductions (MVR) - {emp_name}",
-              min_value=0.0,
-              value=0.0,
-              step=100.0,
-              key=f"adv_{emp['Staff ID']}",
+      with st.container(border=True):
+        st.markdown("#### ⚙️ Payroll Initialization Parameters")
+        p_col1, p_col2, p_col3 = st.columns(3)
+        with p_col1:
+          months_list = [
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"
+          ]
+          active_m_idx = datetime.now().month - 1
+          selected_month_name = st.selectbox(
+              "Operating Month", options=months_list, index=active_m_idx
           )
-          bon_val = st.number_input(
-              f"Production / Food Allowance (MVR) - {emp_name}",
-              min_value=0.0,
-              value=0.0,
-              step=100.0,
-              key=f"bon_{emp['Staff ID']}",
+          selected_month_num = months_list.index(selected_month_name) + 1
+        with p_col2:
+          selected_year = st.selectbox(
+              "Fiscal Year", options=[2025, 2026, 2027], index=1
           )
-          advances_dict[emp_name] = adv_val
-          bonuses_dict[emp_name] = bon_val
+        with p_col3:
+          st.write("")
+          st.write("")
+          include_ramazan = st.checkbox(
+              "Apply MVR 3,000 Ramazan Allowance (Legal Requirement)", value=False
+          )
 
+        period_label = f"{selected_month_name} {selected_year}"
+
+        if not att_df.empty and "Date" in att_df.columns:
+          att_df["Parsed_Date"] = pd.to_datetime(
+              att_df["Date"], errors="coerce"
+          )
+          period_att = att_df[
+              (att_df["Parsed_Date"].dt.month == selected_month_num)
+              & (att_df["Parsed_Date"].dt.year == selected_year)
+          ]
+          yearly_att = att_df[att_df["Parsed_Date"].dt.year == selected_year]
+        else:
+          period_att = pd.DataFrame()
+          yearly_att = pd.DataFrame()
+
+      st.write("") # Spacer
+
+      with st.container(border=True):
+        st.markdown("#### 🛠️ Manual Financial Adjustments")
+        st.caption("Apply one-off salary advances or custom production bonuses for the selected period.")
+
+        advances_dict = {}
+        bonuses_dict = {}
+
+        for idx, emp in staff_df.iterrows():
+          emp_name = emp["Name"]
+          with st.expander(f"Financial Adjustments: {emp_name}"):
+            adj_col1, adj_col2 = st.columns(2)
+            with adj_col1:
+              adv_val = st.number_input(
+                  f"Deduct Salary Advance (MVR)",
+                  min_value=0.0,
+                  value=0.0,
+                  step=100.0,
+                  key=f"adv_{emp['Staff ID']}",
+              )
+            with adj_col2:
+              bon_val = st.number_input(
+                  f"Add Custom Bonus/Allowance (MVR)",
+                  min_value=0.0,
+                  value=0.0,
+                  step=100.0,
+                  key=f"bon_{emp['Staff ID']}",
+              )
+            advances_dict[emp_name] = adv_val
+            bonuses_dict[emp_name] = bon_val
+
+      # --- Execute Payroll Calculations ---
       payroll_list = []
       bml_transfer_list = []
 
@@ -1011,90 +1062,98 @@ if st.session_state.current_role == "Admin":
 
       payroll_df = pd.DataFrame(payroll_list)
 
-      st.divider()
-      st.markdown(f"#### Complete Payroll Ledger — {period_label}")
-      st.dataframe(
-          payroll_df.style.format({
-              "Base Salary": "{:,.2f}",
-              "Present": "{:.1f}",
-              "Absences": "{:.1f}",
-              "OT (Hrs)": "{:.1f}",
-              "OT Pay": "{:,.2f}",
-              "Ramazan": "{:,.2f}",
-              "Bonuses": "{:,.2f}",
-              "Absence Deduct": "{:,.2f}",
-              "Advances": "{:,.2f}",
-              "Pension (7%)": "{:,.2f}",
-              "Net Payout (MVR)": "{:,.2f}",
-              "Employer Pension": "{:,.2f}",
-          }),
-          use_container_width=True,
-          hide_index=True,
-      )
+      st.write("") # Spacer
 
-      st.markdown("#### Bank / BML Bulk Transfer Export")
-      bml_df = pd.DataFrame(bml_transfer_list)
-      bml_csv = bml_df.to_csv(index=False).encode("utf-8")
-      st.download_button(
-          label=f"📥 Download Bank Transfer File ({period_label} CSV)",
-          data=bml_csv,
-          file_name=f"Zelqon_Bank_Transfer_{period_label.replace(' ', '_')}.csv",
-          mime="text/csv",
-          type="secondary",
-      )
+      with st.container(border=True):
+        st.markdown(f"#### 💰 Master Payroll Ledger: {period_label}")
+        st.dataframe(
+            payroll_df.style.format({
+                "Base Salary": "{:,.2f}",
+                "Present": "{:.1f}",
+                "Absences": "{:.1f}",
+                "OT (Hrs)": "{:.1f}",
+                "OT Pay": "{:,.2f}",
+                "Ramazan": "{:,.2f}",
+                "Bonuses": "{:,.2f}",
+                "Absence Deduct": "{:,.2f}",
+                "Advances": "{:,.2f}",
+                "Pension (7%)": "{:,.2f}",
+                "Net Payout (MVR)": "{:,.2f}",
+                "Employer Pension": "{:,.2f}",
+            }),
+            use_container_width=True,
+            hide_index=True,
+        )
 
-      st.divider()
+        st.divider()
+        
+        st.markdown("##### 🏦 Bulk Bank Transfer Export")
+        bml_df = pd.DataFrame(bml_transfer_list)
+        bml_csv = bml_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label=f"📥 Download Bank Transfer CSV ({period_label})",
+            data=bml_csv,
+            file_name=f"Zelqon_Bank_Transfer_{period_label.replace(' ', '_')}.csv",
+            mime="text/csv",
+            type="secondary",
+        )
 
-      st.subheader("Individual Monthly Payslip Generator")
-      chosen_person = st.selectbox(
-          "Select Employee to Export Payslip:",
-          options=payroll_df["Name"].tolist(),
-      )
+      st.write("") # Spacer
 
-      target = payroll_df[payroll_df["Name"] == chosen_person].iloc[0]
+      with st.container(border=True):
+        st.markdown("#### 📄 Payslip Document Generation")
+        chosen_person = st.selectbox(
+            "Select personnel to generate official payslip:",
+            options=payroll_df["Name"].tolist(),
+        )
 
-      c_met1, c_met2, c_met3, c_met4 = st.columns(4)
-      c_met1.metric("Base Pay", f"MVR {target['Base Salary']:,.2f}")
-      c_met2.metric(
-          "OT + Allowances",
-          f"MVR {(target['OT Pay'] + target['Ramazan'] + target['Bonuses']):,.2f}",
-      )
-      c_met3.metric(
-          "Total Deductions",
-          f"MVR {(target['Absence Deduct'] + target['Advances'] + target['Pension (7%)']):,.2f}",
-      )
-      c_met4.metric("Net Salary", f"MVR {target['Net Payout (MVR)']:,.2f}")
+        target = payroll_df[payroll_df["Name"] == chosen_person].iloc[0]
 
-      payslip_pdf = generate_payslip_bytes(
-          emp_name=target["Name"],
-          staff_id=target["Staff ID"],
-          role=target["Role"],
-          bank_acc=target["Bank Account"],
-          period_str=period_label,
-          base_salary=target["Base Salary"],
-          days_present=target["Present"],
-          days_absent=target["Absences"],
-          leave_days=target["Leave Count"],
-          ot_hours=target["OT (Hrs)"],
-          ot_pay=target["OT Pay"],
-          ramazan_allowance=target["Ramazan"],
-          other_allowances=target["Bonuses"],
-          absence_deduction=target["Absence Deduct"],
-          salary_advance=target["Advances"],
-          pension_employee=target["Pension (7%)"],
-          pension_employer=target["Employer Pension"],
-          net_pay=target["Net Payout (MVR)"],
-          annual_bal=target["Ann_Bal"],
-          sick_bal=target["Sick_Bal"],
-          family_bal=target["Fam_Bal"],
-      )
+        # Use bordered container for metrics to look like cards
+        with st.container(border=True):
+          c_met1, c_met2, c_met3, c_met4 = st.columns(4)
+          c_met1.metric("Base Pay", f"MVR {target['Base Salary']:,.2f}")
+          c_met2.metric(
+              "Total Additions",
+              f"MVR {(target['OT Pay'] + target['Ramazan'] + target['Bonuses']):,.2f}",
+          )
+          c_met3.metric(
+              "Total Deductions",
+              f"MVR {(target['Absence Deduct'] + target['Advances'] + target['Pension (7%)']):,.2f}",
+          )
+          c_met4.metric("Net Salary", f"MVR {target['Net Payout (MVR)']:,.2f}")
 
-      pdf_filename = f"Payslip_{target['Name'].replace(' ', '_')}_{period_label.replace(' ', '_')}.pdf"
+        payslip_pdf = generate_payslip_bytes(
+            emp_name=target["Name"],
+            staff_id=target["Staff ID"],
+            role=target["Role"],
+            bank_acc=target["Bank Account"],
+            period_str=period_label,
+            base_salary=target["Base Salary"],
+            days_present=target["Present"],
+            days_absent=target["Absences"],
+            leave_days=target["Leave Count"],
+            ot_hours=target["OT (Hrs)"],
+            ot_pay=target["OT Pay"],
+            ramazan_allowance=target["Ramazan"],
+            other_allowances=target["Bonuses"],
+            absence_deduction=target["Absence Deduct"],
+            salary_advance=target["Advances"],
+            pension_employee=target["Pension (7%)"],
+            pension_employer=target["Employer Pension"],
+            net_pay=target["Net Payout (MVR)"],
+            annual_bal=target["Ann_Bal"],
+            sick_bal=target["Sick_Bal"],
+            family_bal=target["Fam_Bal"],
+        )
 
-      st.download_button(
-          label=f"📥 Download {target['Name']}'s Official Payslip (PDF)",
-          data=payslip_pdf,
-          file_name=pdf_filename,
-          mime="application/pdf",
-          type="primary",
-      )
+        pdf_filename = f"Payslip_{target['Name'].replace(' ', '_')}_{period_label.replace(' ', '_')}.pdf"
+
+        st.write("")
+        st.download_button(
+            label=f"📥 Download Certified Payslip for {target['Name']} (PDF)",
+            data=payslip_pdf,
+            file_name=pdf_filename,
+            mime="application/pdf",
+            type="primary",
+        )
