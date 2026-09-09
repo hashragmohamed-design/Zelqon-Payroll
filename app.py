@@ -125,18 +125,16 @@ if not st.session_state.auth_status:
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def robust_read(worksheet_name, retries=3):
-    """Intercepts network drops and safely retries the Google Sheets connection."""
     for attempt in range(retries):
         try:
             return conn.read(worksheet=worksheet_name, ttl=0)
         except Exception as e:
             if attempt < retries - 1:
-                time.sleep(2) # Pause for 2 seconds before retrying
+                time.sleep(2)
             else:
                 raise e
 
 def robust_update(worksheet_name, data, retries=3):
-    """Safely commits data to Google Sheets with automatic retry."""
     for attempt in range(retries):
         try:
             conn.update(worksheet=worksheet_name, data=data)
@@ -408,27 +406,72 @@ with tab_att:
 
     st.write("")
     with st.container(border=True):
-      st.markdown("#### 🛠️ Shift Ledger Management")
-      st.caption("Inspect real-time entries and void erroneous records from the cloud cache.")
+      st.markdown("#### 🛠️ Smart Shift Ledger & Audit")
+      st.caption("Filter historical records by date and employee. Void erroneous entries securely.")
+      
       att_records = load_attendance_data()
       if not att_records.empty:
         valid_att = att_records.dropna(subset=["Date", "Name"]).copy()
         if not valid_att.empty:
-          st.dataframe(valid_att, use_container_width=True, hide_index=True)
-          shift_options = {f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} - {row['Overtime Hours']}h OT": idx for idx, row in valid_att.iterrows()}
-          del_col1, del_col2 = st.columns([3, 1])
-          with del_col1: selected_shift_to_delete = st.selectbox("Select historical entry to void:", options=list(shift_options.keys()), key="delete_shift_select")
-          with del_col2:
-            st.write("")
-            st.write("")
-            if st.button("🗑️ Void Entry", type="secondary", use_container_width=True):
-              row_to_drop = shift_options[selected_shift_to_delete]
-              remaining_att = att_records.drop(index=row_to_drop).reset_index(drop=True)
-              if remaining_att.empty: remaining_att = pd.DataFrame(columns=["Date", "Staff ID", "Name", "Station", "Status", "Overtime Hours", "Notes"])
-              robust_update("Attendance", data=remaining_att)
-              st.cache_data.clear()
-              st.success("Entry voided and synced.")
-              st.rerun()
+            
+          # 1. Parse Dates for Smart Filtering
+          valid_att["Parsed_Date"] = pd.to_datetime(valid_att["Date"], errors="coerce")
+          
+          # 2. Filter UI Dashboard
+          f_col1, f_col2, f_col3 = st.columns(3)
+          months_list_full = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+          
+          with f_col1:
+              filter_month = st.selectbox("Filter by Month", options=["All"] + months_list_full)
+          with f_col2:
+              available_years = sorted(list(valid_att["Parsed_Date"].dt.year.dropna().unique().astype(int).astype(str)), reverse=True)
+              filter_year = st.selectbox("Filter by Year", options=["All"] + available_years)
+          with f_col3:
+              filter_emp = st.selectbox("Filter by Employee", options=["All"] + sorted(list(valid_att["Name"].unique())))
+
+          # 3. Apply the Filters Mathematically
+          filtered_att = valid_att.copy()
+          if filter_month != "All":
+              month_num = months_list_full.index(filter_month) + 1
+              filtered_att = filtered_att[filtered_att["Parsed_Date"].dt.month == month_num]
+          if filter_year != "All":
+              filtered_att = filtered_att[filtered_att["Parsed_Date"].dt.year == int(filter_year)]
+          if filter_emp != "All":
+              filtered_att = filtered_att[filtered_att["Name"] == filter_emp]
+
+          # 4. Display Contextual Analytics
+          if not filtered_att.empty:
+              sm_c1, sm_c2 = st.columns(2)
+              sm_c1.metric("Total Shifts in Current View", len(filtered_att))
+              total_ot = pd.to_numeric(filtered_att["Overtime Hours"], errors='coerce').fillna(0).sum()
+              sm_c2.metric("Total OT Hours in Current View", f"{total_ot:.1f} hrs")
+              
+              st.dataframe(filtered_att.drop(columns=["Parsed_Date"]), use_container_width=True, hide_index=True)
+              
+              st.divider()
+              st.markdown("##### 🗑️ Void an Entry from Current View")
+              
+              # The dictionary holds the unique original index from att_records, preventing accidental wrong-row deletion
+              shift_options = {f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} - {row['Overtime Hours']}h OT": idx for idx, row in filtered_att.iterrows()}
+              
+              del_col1, del_col2 = st.columns([3, 1])
+              with del_col1: 
+                  selected_shift_to_delete = st.selectbox("Select specific entry to permanently void:", options=list(shift_options.keys()), key="delete_shift_select")
+              with del_col2:
+                  st.write("")
+                  st.write("")
+                  if st.button("Void Selected Entry", type="secondary", use_container_width=True):
+                      row_to_drop = shift_options[selected_shift_to_delete]
+                      remaining_att = att_records.drop(index=row_to_drop).reset_index(drop=True)
+                      if remaining_att.empty: remaining_att = pd.DataFrame(columns=["Date", "Staff ID", "Name", "Station", "Status", "Overtime Hours", "Notes"])
+                      robust_update("Attendance", data=remaining_att)
+                      st.cache_data.clear()
+                      st.success("Entry voided and synced to cloud.")
+                      st.rerun()
+          else:
+              st.info("No records match the current filters.")
+      else:
+        st.info("No attendance records logged yet.")
 
 # =========================================================
 # TAB 2: WORKFORCE DIRECTORY (ADMIN ONLY)
@@ -599,10 +642,7 @@ if st.session_state.current_role == "Admin":
                 with c_void:
                     st.markdown("##### 🗑️ Void Active Loan")
                     st.caption("Mistake in issuing? Void the ledger entirely.")
-                    
-                    # Create a dictionary to map the display string back to the exact dataframe index
                     loan_options = {f"{row['Name']} | Bal: MVR {row['Remaining Balance (MVR)']}": idx for idx, row in active_loans.iterrows()}
-                    
                     loan_to_delete = st.selectbox("Select ledger to void:", options=list(loan_options.keys()), key="void_loan")
                     if st.button("Void Ledger", type="secondary", use_container_width=True):
                         row_to_drop = loan_options[loan_to_delete]
