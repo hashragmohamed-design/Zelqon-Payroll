@@ -1,5 +1,6 @@
 from datetime import date, datetime
 import io
+import time
 from fpdf import FPDF
 import pandas as pd
 import streamlit as st
@@ -119,14 +120,38 @@ if not st.session_state.auth_status:
 
 
 # =========================================================
-# CLOUD DATABASE CONNECTORS (WITH INTELLIGENT CACHING)
+# CLOUD DATABASE CONNECTORS (ENTERPRISE RETRY LOGIC)
 # =========================================================
 conn = st.connection("gsheets", type=GSheetsConnection)
+
+def robust_read(worksheet_name, retries=3):
+    """Intercepts network drops and safely retries the Google Sheets connection."""
+    for attempt in range(retries):
+        try:
+            return conn.read(worksheet=worksheet_name, ttl=0)
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(2) # Pause for 2 seconds before retrying
+            else:
+                raise e
+
+def robust_update(worksheet_name, data, retries=3):
+    """Safely commits data to Google Sheets with automatic retry."""
+    for attempt in range(retries):
+        try:
+            conn.update(worksheet=worksheet_name, data=data)
+            return
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(2)
+            else:
+                st.error(f"Network Timeout: Failed to sync with Google Sheets after {retries} attempts. Please check your connection.")
+                raise e
 
 @st.cache_data(ttl=600)
 def load_staff_data():
   try:
-    df = conn.read(worksheet="Staff", ttl=0)
+    df = robust_read("Staff")
     expected_cols = {"Staff ID": "ZF-001", "Name": "", "Role": "Semi-Cooked Processing", "Base Salary (MVR)": 4500.0, "Standard Monthly Days": 30, "Bank Account": "", "Pension Enrolled": "No"}
     if df is None or df.empty:
       return pd.DataFrame(columns=list(expected_cols.keys()))
@@ -139,7 +164,7 @@ def load_staff_data():
 @st.cache_data(ttl=600)
 def load_attendance_data():
   try:
-    df = conn.read(worksheet="Attendance", ttl=0)
+    df = robust_read("Attendance")
     expected_cols = {"Date": str(date.today()), "Staff ID": "ZF-001", "Name": "", "Station": "Semi-Cooked Processing", "Status": "Present", "Overtime Hours": 0.0, "Notes": ""}
     if df is None or df.empty:
       return pd.DataFrame(columns=list(expected_cols.keys()))
@@ -152,7 +177,7 @@ def load_attendance_data():
 @st.cache_data(ttl=600)
 def load_advances_data():
   try:
-    df = conn.read(worksheet="Advances", ttl=0)
+    df = robust_read("Advances")
     expected_cols = {"Staff ID": "ZF-001", "Name": "", "Total Loan (MVR)": 0.0, "Monthly Installment (MVR)": 0.0, "Remaining Balance (MVR)": 0.0}
     if df is None or df.empty:
       return pd.DataFrame(columns=list(expected_cols.keys()))
@@ -349,7 +374,7 @@ with tab_att:
             new_batch_rows.append({"Date": str(batch_date), "Staff ID": emp["Staff ID"], "Name": emp["Name"], "Station": emp.get("Role", "Semi-Cooked Processing"), "Status": "Present", "Overtime Hours": 0.0, "Notes": "Auto Batch Check-In"})
           batch_df = pd.DataFrame(new_batch_rows)
           updated_att = pd.concat([current_att, batch_df], ignore_index=True) if not current_att.empty else batch_df
-          conn.update(worksheet="Attendance", data=updated_att)
+          robust_update("Attendance", data=updated_att)
           st.cache_data.clear()
           st.success(f"Recorded Present status for {len(staff_df)} members on {batch_date}.")
           st.rerun()
@@ -376,7 +401,7 @@ with tab_att:
           emp_id = staff_df[staff_df["Name"] == selected_emp]["Staff ID"].values[0] if not staff_df[staff_df["Name"] == selected_emp].empty else "ZF-000"
           new_entry = pd.DataFrame([{"Date": str(shift_date), "Staff ID": str(emp_id), "Name": str(selected_emp), "Station": str(selected_station), "Status": str(status), "Overtime Hours": float(ot_hours), "Notes": str(shift_notes)}])
           updated_att = pd.concat([current_att, new_entry], ignore_index=True) if not current_att.empty else new_entry
-          conn.update(worksheet="Attendance", data=updated_att)
+          robust_update("Attendance", data=updated_att)
           st.cache_data.clear()
           st.success(f"Shift successfully logged for {selected_emp}.")
           st.rerun()
@@ -400,7 +425,7 @@ with tab_att:
               row_to_drop = shift_options[selected_shift_to_delete]
               remaining_att = att_records.drop(index=row_to_drop).reset_index(drop=True)
               if remaining_att.empty: remaining_att = pd.DataFrame(columns=["Date", "Staff ID", "Name", "Station", "Status", "Overtime Hours", "Notes"])
-              conn.update(worksheet="Attendance", data=remaining_att)
+              robust_update("Attendance", data=remaining_att)
               st.cache_data.clear()
               st.success("Entry voided and synced.")
               st.rerun()
@@ -437,7 +462,7 @@ if st.session_state.current_role == "Admin":
             else:
               new_row = pd.DataFrame([{"Staff ID": auto_id, "Name": new_name.strip(), "Role": new_role, "Base Salary (MVR)": float(new_salary), "Standard Monthly Days": int(new_days), "Bank Account": str(new_bank).strip(), "Pension Enrolled": str(new_pension)}])
               updated_staff = pd.concat([staff_df, new_row], ignore_index=True) if not staff_df.empty else new_row
-              conn.update(worksheet="Staff", data=updated_staff)
+              robust_update("Staff", data=updated_staff)
               st.cache_data.clear()
               st.success(f"Registered {new_name} ({auto_id}) successfully!")
               st.rerun()
@@ -453,7 +478,7 @@ if st.session_state.current_role == "Admin":
           if st.button("⚠️ Purge from Database", type="secondary"):
             remaining = staff_df[staff_df["Name"] != staff_to_delete].reset_index(drop=True)
             if remaining.empty: remaining = pd.DataFrame(columns=["Staff ID", "Name", "Role", "Base Salary (MVR)", "Standard Monthly Days", "Bank Account", "Pension Enrolled"])
-            conn.update(worksheet="Staff", data=remaining)
+            robust_update("Staff", data=remaining)
             st.cache_data.clear()
             st.warning(f"Purged {staff_to_delete} from database.")
             st.rerun()
@@ -542,7 +567,7 @@ if st.session_state.current_role == "Admin":
             emp_id_val = staff_df[staff_df["Name"] == loan_emp]["Staff ID"].values[0]
             new_loan = pd.DataFrame([{"Staff ID": emp_id_val, "Name": loan_emp, "Total Loan (MVR)": loan_amt, "Monthly Installment (MVR)": loan_install, "Remaining Balance (MVR)": loan_amt}])
             updated_adv = pd.concat([adv_df, new_loan], ignore_index=True) if not adv_df.empty else new_loan
-            conn.update(worksheet="Advances", data=updated_adv)
+            robust_update("Advances", data=updated_adv)
             st.cache_data.clear()
             st.success(f"Loan of MVR {loan_amt} issued to {loan_emp}.")
             st.rerun()
@@ -562,7 +587,7 @@ if st.session_state.current_role == "Admin":
                     installment = float(adv_df.at[idx_to_update, "Monthly Installment (MVR)"])
                     current_bal = float(adv_df.at[idx_to_update, "Remaining Balance (MVR)"])
                     adv_df.at[idx_to_update, "Remaining Balance (MVR)"] = max(0.0, current_bal - installment)
-                    conn.update(worksheet="Advances", data=adv_df)
+                    robust_update("Advances", data=adv_df)
                     st.cache_data.clear()
                     st.success(f"Deducted MVR {installment} from {loan_to_pay}'s loan balance.")
                     st.rerun()
