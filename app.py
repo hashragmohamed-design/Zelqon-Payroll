@@ -166,7 +166,7 @@ def load_staff_data():
         "Name": "",
         "Role": "Semi-Cooked Processing",
         "Base Salary (MVR)": 4500.0,
-        "Standard Monthly Days": 30,  # Updated to 30 days
+        "Standard Monthly Days": 30,  # 30-day baseline
         "Bank Account": "",
         "Pension Enrolled": "No",
     }
@@ -738,8 +738,13 @@ if st.session_state.current_role == "Admin":
               value=5000.0,
               step=250.0,
           )
+          # Form locked to exactly 30 days to enforce policy
           new_days = st.number_input(
-              "Standard Work Days / Month", min_value=15, max_value=31, value=30 # Updated to 30 days
+              "Standard Work Days / Month", 
+              min_value=30, 
+              max_value=30, 
+              value=30,
+              disabled=True
           )
           new_bank = st.text_input(
               "Bank Account Number (Optional)",
@@ -979,11 +984,11 @@ if st.session_state.current_role == "Admin":
             bank_acc = str(bank_raw).strip()
             
         base_sal = float(emp["Base Salary (MVR)"])
-        std_days = (
-            float(emp["Standard Monthly Days"])
-            if emp["Standard Monthly Days"]
-            else 30.0 # Updated to 30 days fallback
-        )
+        
+        # STRICT 30-DAY OVERRIDE: 
+        # Ignoring old Google Sheet legacy data to enforce exact compliance.
+        std_days = 30.0 
+        
         is_pension = str(emp.get("Pension Enrolled", "No")).strip().lower() in [
             "yes",
             "true",
