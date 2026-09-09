@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import io
 from fpdf import FPDF
 import pandas as pd
 import streamlit as st
@@ -83,6 +84,37 @@ def load_attendance_data():
             "Overtime Hours",
             "Notes",
         ]
+    )
+
+
+# --- Offline CSV Backup (Sidebar) ---
+with st.sidebar:
+  st.title("Zelqon Foods")
+  st.caption("Fuvahmulah, Maldives")
+  st.divider()
+  st.subheader("💾 Cloud Data Backup")
+  st.caption("Export offline copies of your Google Sheets database.")
+
+  staff_backup_df = load_staff_data()
+  if not staff_backup_df.empty:
+    csv_staff = staff_backup_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="📥 Download Staff (CSV)",
+        data=csv_staff,
+        file_name=f"Zelqon_Staff_Backup_{date.today()}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+  att_backup_df = load_attendance_data()
+  if not att_backup_df.empty:
+    csv_att = att_backup_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="📥 Download Attendance (CSV)",
+        data=csv_att,
+        file_name=f"Zelqon_Attendance_Backup_{date.today()}.csv",
+        mime="text/csv",
+        use_container_width=True,
     )
 
 
@@ -204,7 +236,7 @@ def generate_payslip_bytes(
   pdf.cell(60, 7, "Amount (MVR)", border=1, fill=True, align="R")
   pdf.ln(7)
 
-  # Table Rows
+  # Financial Rows
   pdf.set_font("Helvetica", "", 10)
   pdf.cell(130, 7, "Base Monthly Salary", border=1)
   pdf.cell(60, 7, f"{base_salary:,.2f}", border=1, align="R")
@@ -326,7 +358,6 @@ with tab_att:
     if not valid_att.empty:
       st.dataframe(valid_att, use_container_width=True, hide_index=True)
 
-      # Build unique selectable string for each row
       shift_options = {
           f"{row['Date']} | {row['Name']} ({row['Status']}) - {row['Overtime Hours']}h OT": idx
           for idx, row in valid_att.iterrows()
@@ -382,7 +413,6 @@ with tab_dir:
     st.markdown("#### Register New Staff")
     staff_df = load_staff_data()
 
-    # Generate sequential Staff ID
     next_num = 1
     if not staff_df.empty and "Staff ID" in staff_df.columns:
       existing_ids = staff_df["Staff ID"].dropna().astype(str).tolist()
@@ -484,7 +514,6 @@ with tab_pay:
   if staff_df.empty:
     st.info("Add team members in Workforce Directory to view payroll.")
   else:
-    # Period Filter Controls
     col_m, col_y = st.columns(2)
     with col_m:
       current_month = datetime.now().month
@@ -513,7 +542,6 @@ with tab_pay:
 
     period_display = f"{selected_month_name} {selected_year}"
 
-    # Filter attendance by selected month & year
     if not attendance_df.empty and "Date" in attendance_df.columns:
       attendance_df["Parsed_Date"] = pd.to_datetime(
           attendance_df["Date"], errors="coerce"
@@ -540,7 +568,6 @@ with tab_pay:
       daily_wage = base_sal / std_days
       hourly_rate = daily_wage / 8.0
 
-      # Default metrics if no records logged
       present_count = 0.0
       absent_count = 0.0
       ot_hours_total = 0.0
@@ -564,7 +591,6 @@ with tab_pay:
           except (ValueError, TypeError):
             pass
 
-      # Standard Maldives Overtime multiplier: 1.25x
       ot_payout = ot_hours_total * hourly_rate * 1.25
       absence_deduction = absent_count * daily_wage
       net_payout = base_sal - absence_deduction + ot_payout
