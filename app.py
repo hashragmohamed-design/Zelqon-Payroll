@@ -10,37 +10,19 @@ st.set_page_config(
     page_title="Zelqon HR & Payroll", page_icon="🏢", layout="wide"
 )
 
-# Custom Corporate CSS - Aggressive Watermark Removal & Theming
+# Custom Corporate CSS - Safe Watermark Removal
 st.markdown("""
     <style>
-        /* 1. Hide the default Streamlit header, footer, and main menu */
-        #MainMenu {visibility: hidden !important;}
+        /* 1. Hide the default Streamlit footer and top-right toolbar (Share/Deploy) */
         footer {visibility: hidden !important;}
-        header {visibility: hidden !important;}
-        
-        /* 2. Hide the 'Deploy', 'Share', and 'GitHub' top-right buttons */
-        [data-testid="stAppDeployButton"] {display: none !important;}
         [data-testid="stToolbar"] {display: none !important;}
-        [data-testid="stHeader"] {display: none !important;}
+        [data-testid="stAppDeployButton"] {display: none !important;}
         
-        /* 3. Aggressively target the "Hosted with Streamlit" bottom-right badge */
+        /* 2. Hide the "Hosted with Streamlit" bottom-right badge safely */
         [data-testid="stViewerBadge"] {display: none !important;}
-        .viewerBadge_container__1CJvw {display: none !important;}
         
-        /* 4. Catch-all for any floating Streamlit links */
-        a[title="Hosted with Streamlit"] {display: none !important;}
-        a[href*="streamlit.io"] {display: none !important;}
-        
-        /* 5. Force the main app background color */
-        .stApp {
-            background-color: #F4F7FA !important;
-        }
-        
-        /* Adjust top padding since header is hidden */
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
+        /* 3. Make header transparent to prevent mobile layout jumping */
+        [data-testid="stHeader"] {background: transparent !important;}
         
         /* Custom Title Typography */
         .zelqon-title {
@@ -55,13 +37,6 @@ st.markdown("""
             color: #64748B;
             margin-bottom: 1.5rem;
             font-weight: 500;
-        }
-        
-        /* Metric numbers styling */
-        div[data-testid="stMetricValue"] {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #0F172A;
         }
     </style>
 """, unsafe_allow_html=True)
