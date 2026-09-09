@@ -210,17 +210,8 @@ def generate_payslip_bytes(
   pdf.set_font("Helvetica", "B", 10)
   pdf.cell(0, 5, "1. Monthly Duty & Attendance", new_x="LMARGIN", new_y="NEXT")
   pdf.set_font("Helvetica", "", 9)
-  pdf.cell(
-      63, 4, f"Days Worked: {days_present:.1f}", border=0, align="L", new_x="NONE"
-  )
-  pdf.cell(
-      63,
-      4,
-      f"Approved Leaves: {leave_days:.1f}",
-      border=0,
-      align="L",
-      new_x="NONE",
-  )
+  pdf.cell(63, 4, f"Days Worked: {days_present:.1f}", border=0, align="L")
+  pdf.cell(63, 4, f"Approved Leaves: {leave_days:.1f}", border=0, align="L")
   pdf.cell(
       64,
       4,
@@ -315,13 +306,13 @@ def generate_payslip_bytes(
   # Signatures
   pdf.ln(10)
   pdf.set_font("Helvetica", "", 8)
-  pdf.cell(90, 4, "___________________________________", new_x="NONE")
+  pdf.cell(90, 4, "___________________________________")
   pdf.cell(10, 4, "")
   pdf.cell(
       90, 4, "___________________________________", new_x="LMARGIN", new_y="NEXT"
   )
 
-  pdf.cell(90, 4, "Authorized Officer / Zelqon Management", new_x="NONE")
+  pdf.cell(90, 4, "Authorized Officer / Zelqon Management")
   pdf.cell(10, 4, "")
   pdf.cell(
       90, 4, "Employee Signature / Acknowledgment", new_x="LMARGIN", new_y="NEXT"
