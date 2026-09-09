@@ -5,38 +5,59 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# --- Page Configuration & CSS Styling ---
+# --- Page Configuration & Executive Styling ---
 st.set_page_config(
-    page_title="Zelqon HR & Payroll", page_icon="🏢", layout="wide"
+    page_title="Zelqon Foods | Enterprise HR & Payroll", page_icon="🏢", layout="wide"
 )
 
-# Custom Corporate CSS - Safe Watermark Removal
+# Advanced Executive CSS
 st.markdown("""
     <style>
-        /* 1. Hide the default Streamlit footer and top-right toolbar (Share/Deploy) */
+        /* Hide default Streamlit developer clutter */
         footer {visibility: hidden !important;}
         [data-testid="stToolbar"] {display: none !important;}
         [data-testid="stAppDeployButton"] {display: none !important;}
-        
-        /* 2. Hide the "Hosted with Streamlit" bottom-right badge safely */
         [data-testid="stViewerBadge"] {display: none !important;}
-        
-        /* 3. Make header transparent to prevent mobile layout jumping */
         [data-testid="stHeader"] {background: transparent !important;}
-        
-        /* Custom Title Typography */
+
+        /* Executive Header Banner */
+        .zelqon-banner {
+            background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
+            padding: 1.8rem 2rem;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
         .zelqon-title {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 2.2rem;
             font-weight: 700;
-            color: #1E3A8A; /* Deep Corporate Blue */
-            margin-bottom: 0px;
+            color: #FFFFFF;
+            margin: 0px;
+            letter-spacing: -0.5px;
         }
         .zelqon-subtitle {
-            font-size: 1rem;
-            color: #64748B;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
+            font-size: 0.95rem;
+            color: #94A3B8;
+            margin-top: 4px;
+            margin-bottom: 0px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Metric Widgets Styling */
+        div[data-testid="stMetric"] {
+            background-color: rgba(30, 58, 138, 0.03);
+            border: 1px solid rgba(30, 58, 138, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        div[data-testid="stMetricValue"] {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1E3A8A;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -82,22 +103,21 @@ def verify_login(username, password):
 if not st.session_state.auth_status:
   st.write("")
   st.write("")
-  st.write("")
   
   col_pad_left, col_login, col_pad_right = st.columns([1, 1.2, 1])
 
   with col_login:
     with st.container(border=True):
-      st.markdown("<h2 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>Zelqon Foods</h2>", unsafe_allow_html=True)
-      st.markdown("<p style='text-align: center; color: #64748B; margin-top: 0;'>Secure HR & Operations Portal</p>", unsafe_allow_html=True)
+      st.markdown("<h2 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>ZELQON FOODS</h2>", unsafe_allow_html=True)
+      st.markdown("<p style='text-align: center; color: #64748B; margin-top: 0; font-size: 0.85rem; letter-spacing: 1px;'>SECURE ENTERPRISE PORTAL</p>", unsafe_allow_html=True)
       st.divider()
       
       with st.form("zelqon_login_form"):
-        login_user = st.text_input("Username", placeholder="Enter assigned username")
-        login_pass = st.text_input("Password", type="password", placeholder="Enter secure password")
+        login_user = st.text_input("Username", placeholder="Enter administrator ID")
+        login_pass = st.text_input("Password", type="password", placeholder="Enter secure passphrase")
         st.write("")
         submit_login = st.form_submit_button(
-            "Authenticate Session", type="primary", use_container_width=True
+            "Authorize Access", type="primary", use_container_width=True
         )
 
         if submit_login:
@@ -109,9 +129,10 @@ if not st.session_state.auth_status:
             st.session_state.current_name = name
             st.rerun()
           else:
-            st.error("Authentication failed. Please verify credentials.")
+            st.error("Access Denied: Invalid credentials provided.")
 
-  st.stop()  # Halts execution so unauthenticated users cannot view data or sheets
+  st.stop()  # Halts execution for unauthenticated users
+
 
 # =========================================================
 # AUTHENTICATED APP ENGINE
@@ -213,8 +234,7 @@ class PayslipPDF(FPDF):
     self.cell(
         0,
         4,
-        "Fuvahmulah City, Republic of Maldives | Registration: Semi-Cooked"
-        " Operations",
+        "Fuvahmulah City, Republic of Maldives | Registration: Semi-Cooked Operations",
         align="C",
         new_x="LMARGIN",
         new_y="NEXT",
@@ -237,8 +257,7 @@ class PayslipPDF(FPDF):
     self.cell(
         0,
         4,
-        "Maldives Employment Act & Pension Act Compliant Record | Generated by"
-        " Zelqon HR",
+        "Maldives Employment Act & Pension Act Compliant Record | Generated by Zelqon HR",
         align="C",
         new_x="LMARGIN",
         new_y="NEXT",
@@ -338,7 +357,7 @@ def generate_payslip_bytes(
   )
   pdf.ln(1)
   
-  # New Leave Quota Tracker inside PDF
+  # Leave Quota Tracker inside PDF
   pdf.set_font("Helvetica", "I", 8)
   pdf.cell(
       0,
@@ -415,8 +434,7 @@ def generate_payslip_bytes(
     pdf.cell(
         0,
         4,
-        f"* Employer Pension Contribution: MVR {pension_employer:,.2f} (7%"
-        " Zelqon Foods direct contribution to MRPS).",
+        f"* Employer Pension Contribution: MVR {pension_employer:,.2f} (7% Zelqon Foods direct contribution to MRPS).",
         new_x="LMARGIN",
         new_y="NEXT",
     )
@@ -443,13 +461,12 @@ def generate_payslip_bytes(
 # --- Sidebar Setup ---
 with st.sidebar:
   st.markdown("### 🏢 Zelqon Foods")
-  st.caption("Operations & HR Control Panel")
+  st.caption("Fuvahmulah Operations Hub")
   st.divider()
 
-  # Active User Badge
   with st.container(border=True):
-    st.markdown(f"👤 **Logged In As:**<br>{st.session_state.current_name}", unsafe_allow_html=True)
-    st.markdown(f"🛡️ **Clearance:** `{st.session_state.current_role}`")
+    st.markdown(f"👤 **Operator:**<br>{st.session_state.current_name}", unsafe_allow_html=True)
+    st.markdown(f"🛡️ **Access Level:** `{st.session_state.current_role}`")
     st.write("")
     if st.button("🚪 Secure Sign Out", use_container_width=True, type="secondary"):
       st.session_state.auth_status = False
@@ -458,56 +475,57 @@ with st.sidebar:
       st.session_state.current_name = None
       st.rerun()
 
-  # Backups reserved exclusively for Admins
   if st.session_state.current_role == "Admin":
     st.divider()
-    st.markdown("#### 💾 Database Backups")
+    st.markdown("#### 💾 Secure Data Exports")
     staff_backup = load_staff_data()
     if not staff_backup.empty:
       st.download_button(
-          label="📥 Export Staff Registry (CSV)",
+          label="📥 Export Staff Registry",
           data=staff_backup.to_csv(index=False).encode("utf-8"),
-          file_name=f"Zelqon_Staff_Backup_{date.today()}.csv",
+          file_name=f"Zelqon_Staff_{date.today()}.csv",
           mime="text/csv",
           use_container_width=True,
       )
     att_backup = load_attendance_data()
     if not att_backup.empty:
       st.download_button(
-          label="📥 Export Attendance Logs (CSV)",
+          label="📥 Export Attendance Log",
           data=att_backup.to_csv(index=False).encode("utf-8"),
-          file_name=f"Zelqon_Attendance_Backup_{date.today()}.csv",
+          file_name=f"Zelqon_Attendance_{date.today()}.csv",
           mime="text/csv",
           use_container_width=True,
       )
 
-# --- App Header & Navigation ---
-st.markdown('<p class="zelqon-title">Zelqon Foods HR Portal</p>', unsafe_allow_html=True)
-st.markdown('<p class="zelqon-subtitle">Fuvahmulah City, Maldives | Internal Operations System</p>', unsafe_allow_html=True)
+# --- Executive Dashboard Header ---
+st.markdown("""
+    <div class="zelqon-banner">
+        <p class="zelqon-title">Zelqon Foods HR Portal</p>
+        <p class="zelqon-subtitle">Fuvahmulah City, Republic of Maldives &bull; Semi-Cooked Operations</p>
+    </div>
+""", unsafe_allow_html=True)
 
 if st.session_state.current_role == "Admin":
   tab_att, tab_dir, tab_leave, tab_pay = st.tabs([
       "🕒 Daily Attendance",
       "👥 Workforce Directory",
-      "📊 Leave Quotas",
+      "📊 Leave Management",
       "💼 Payroll Processing",
   ])
 else:
   tab_att, = st.tabs(["🕒 Daily Attendance & Shifts"])
-  st.info("ℹ️ **Staff Mode Active:** Daily logging enabled. Management and Financial modules are secured.")
+  st.info("ℹ️ **Kitchen Staff Mode:** Daily attendance logging enabled. Administrative controls are secured.")
 
 # =========================================================
 # TAB 1: DAILY ATTENDANCE AND SHIFT LOGGING
 # =========================================================
 with tab_att:
-  
   staff_df = load_staff_data()
   if staff_df.empty or "Name" not in staff_df.columns:
-    st.warning("⚠️ System is empty. Please register staff in the Workforce Directory first.")
+    st.warning("⚠️ Database registry is empty. Please register personnel in the Workforce Directory first.")
   else:
-    # Batch Action Card
     with st.container(border=True):
-      with st.expander("⚡ Batch Action: Mark All Active Staff 'Present'"):
+      with st.expander("⚡ Batch Action: Mark All Active Personnel 'Present'"):
         batch_col1, batch_col2 = st.columns([2, 1])
         with batch_col1:
           batch_date = st.date_input(
@@ -539,17 +557,14 @@ with tab_att:
             )
             conn.update(worksheet="Attendance", data=updated_att)
             st.cache_data.clear()
-            st.success(
-                f"Successfully logged {len(staff_df)} employees as Present for {batch_date}."
-            )
+            st.success(f"Successfully recorded Present status for {len(staff_df)} staff members on {batch_date}.")
             st.rerun()
 
-    st.write("") # Spacer
-    
-    # Individual Entry Card
+    st.write("")
+
     with st.container(border=True):
-      st.markdown("#### 📝 Record Individual Shift")
-      st.caption("Log daily attendance, half-days, leave, or unexcused absences.")
+      st.markdown("#### 📝 Individual Shift Entry")
+      st.caption("Record attendance status, station assignment, overtime hours, and shift notes.")
       with st.form("single_attendance_form", clear_on_submit=True):
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -589,7 +604,7 @@ with tab_att:
 
         shift_notes = st.text_input("Operational Notes (Optional)")
         submit_shift = st.form_submit_button(
-            "💾 Commit Shift Record", type="primary"
+            "💾 Save Shift Record", type="primary"
         )
 
         if submit_shift:
@@ -617,15 +632,14 @@ with tab_att:
           )
           conn.update(worksheet="Attendance", data=updated_att)
           st.cache_data.clear()
-          st.success(f"Shift successfully recorded for {selected_emp}.")
+          st.success(f"Shift successfully logged for {selected_emp}.")
           st.rerun()
 
-    st.write("") # Spacer
+    st.write("")
 
-    # Manage Shifts Card
     with st.container(border=True):
-      st.markdown("#### 🛠️ Manage Logged Shifts")
-      st.caption("Review recent entries or delete erroneous logs from the cloud database.")
+      st.markdown("#### 🛠️ Shift Ledger Management")
+      st.caption("Review recent logs and void erroneous entries from the cloud database.")
       att_records = load_attendance_data()
       if not att_records.empty:
         valid_att = att_records.dropna(subset=["Date", "Name"]).copy()
@@ -633,15 +647,14 @@ with tab_att:
           st.dataframe(valid_att, use_container_width=True, hide_index=True)
 
           shift_options = {
-              f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} -"
-              f" {row['Overtime Hours']}h OT": idx
+              f"{row['Date']} | {row['Name']} ({row['Status']}) @ {row['Station']} - {row['Overtime Hours']}h OT": idx
               for idx, row in valid_att.iterrows()
           }
 
           del_col1, del_col2 = st.columns([3, 1])
           with del_col1:
             selected_shift_to_delete = st.selectbox(
-                "Select historical record to void:",
+                "Select record to void:",
                 options=list(shift_options.keys()),
                 key="delete_shift_select",
             )
@@ -669,10 +682,10 @@ with tab_att:
 
               conn.update(worksheet="Attendance", data=remaining_att)
               st.cache_data.clear()
-              st.success("Record voided and database synced.")
+              st.success("Record voided successfully.")
               st.rerun()
       else:
-        st.info("No attendance records have been logged yet.")
+        st.info("No attendance records found in database.")
 
 # =========================================================
 # TAB 2: WORKFORCE DIRECTORY (ADMIN ONLY)
@@ -683,7 +696,7 @@ if st.session_state.current_role == "Admin":
 
     with dir_col1:
       with st.container(border=True):
-        st.markdown("#### ➕ Register Employee")
+        st.markdown("#### ➕ Register New Personnel")
         staff_df = load_staff_data()
 
         next_id_num = 1
@@ -699,10 +712,10 @@ if st.session_state.current_role == "Admin":
         auto_id = f"ZF-{next_id_num:03d}"
 
         with st.form("new_employee_form", clear_on_submit=True):
-          st.text_input("System Assigned ID", value=auto_id, disabled=True)
+          st.text_input("Assigned Staff ID", value=auto_id, disabled=True)
           new_name = st.text_input("Full Legal Name")
           new_role = st.selectbox(
-              "Primary Operational Assignment",
+              "Primary Kitchen Assignment",
               options=[
                   "Semi-Cooked Processing",
                   "Packaging & Quality",
@@ -729,12 +742,12 @@ if st.session_state.current_role == "Admin":
           )
 
           submit_new_staff = st.form_submit_button(
-              "💾 Register to Database", type="primary"
+              "💾 Register Staff Member", type="primary"
           )
 
           if submit_new_staff:
             if not new_name.strip():
-              st.error("Employee name is required to create a profile.")
+              st.error("Employee legal name is required.")
             else:
               new_row = pd.DataFrame([{
                   "Staff ID": auto_id,
@@ -752,24 +765,24 @@ if st.session_state.current_role == "Admin":
               )
               conn.update(worksheet="Staff", data=updated_staff)
               st.cache_data.clear()
-              st.success(f"Profile created for {new_name} ({auto_id}).")
+              st.success(f"Successfully registered {new_name} ({auto_id}).")
               st.rerun()
 
     with dir_col2:
       with st.container(border=True):
-        st.markdown("#### 📋 Active Personnel")
+        st.markdown("#### 📋 Active Personnel Directory")
         staff_df = load_staff_data()
         if not staff_df.empty:
           st.dataframe(staff_df, use_container_width=True, hide_index=True)
 
           st.divider()
-          st.markdown("##### Remove Employee Record")
+          st.markdown("##### Remove Personnel Record")
           staff_to_delete = st.selectbox(
-              "Select employee for termination/removal:",
+              "Select employee to purge:",
               options=staff_df["Name"].tolist(),
               key="delete_staff_box",
           )
-          if st.button("⚠️ Purge from System", type="secondary"):
+          if st.button("⚠️ Purge from Database", type="secondary"):
             remaining = staff_df[
                 staff_df["Name"] != staff_to_delete
             ].reset_index(drop=True)
@@ -787,10 +800,10 @@ if st.session_state.current_role == "Admin":
               )
             conn.update(worksheet="Staff", data=remaining)
             st.cache_data.clear()
-            st.warning(f"Employee {staff_to_delete} has been purged from the database.")
+            st.warning(f"Purged {staff_to_delete} from Zelqon Foods records.")
             st.rerun()
         else:
-          st.info("The workforce directory is currently empty.")
+          st.info("Directory is currently empty.")
 
 # =========================================================
 # TAB 3: LEAVE MANAGEMENT (ADMIN ONLY)
@@ -798,15 +811,15 @@ if st.session_state.current_role == "Admin":
 if st.session_state.current_role == "Admin":
   with tab_leave:
     with st.container(border=True):
-      st.markdown("#### 📊 Employee Leave Tracking")
+      st.markdown("#### 📊 Employee Leave Quota Tracker")
       current_year = date.today().year
-      st.caption(f"Tracking utilization against Maldives Employment Act legal quotas for **{current_year}**.")
+      st.caption(f"Live quota utilization against Maldives Employment Act standards for **{current_year}**.")
       
       staff_df = load_staff_data()
       att_df = load_attendance_data()
       
       if staff_df.empty:
-        st.info("No personnel found. Register team members first.")
+        st.info("No personnel registered in directory.")
       else:
         if not att_df.empty and "Date" in att_df.columns:
           att_df["Parsed_Date"] = pd.to_datetime(att_df["Date"], errors="coerce")
@@ -843,21 +856,20 @@ if st.session_state.current_role == "Admin":
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Name": st.column_config.TextColumn("Personnel"),
+                "Name": st.column_config.TextColumn("Personnel Name"),
                 "Annual Rem": st.column_config.ProgressColumn(
-                    "Annual Remaining (30)", format="%d days", min_value=0, max_value=30
+                    "Annual Remaining (30d)", format="%d days", min_value=0, max_value=30
                 ),
                 "Sick Rem": st.column_config.ProgressColumn(
-                    "Sick Remaining (30)", format="%d days", min_value=0, max_value=30
+                    "Sick Remaining (30d)", format="%d days", min_value=0, max_value=30
                 ),
                 "Family Rem": st.column_config.ProgressColumn(
-                    "Family Remaining (10)", format="%d days", min_value=0, max_value=10
+                    "Family Remaining (10d)", format="%d days", min_value=0, max_value=10
                 ),
             }
         )
         
-        st.info("💡 **Automation Logic:** The system scans the shift database for the current calendar year. Categorizing a shift as 'Sick Leave' automatically debits the employee's balance. Balances automatically reset to maximum on January 1st.")
-
+        st.info("💡 **System Automation:** Quotas are calculated dynamically from the attendance log. Logging a shift as 'Sick Leave' automatically updates the remaining balance. Balances auto-reset on January 1st.")
 
 # =========================================================
 # TAB 4: PAYROLL & COMPLIANCE (ADMIN ONLY)
@@ -871,7 +883,7 @@ if st.session_state.current_role == "Admin":
       st.info("Awaiting personnel registration to initialize payroll engine.")
     else:
       with st.container(border=True):
-        st.markdown("#### ⚙️ Payroll Initialization Parameters")
+        st.markdown("#### ⚙️ Payroll Calculation Parameters")
         p_col1, p_col2, p_col3 = st.columns(3)
         with p_col1:
           months_list = [
@@ -880,7 +892,7 @@ if st.session_state.current_role == "Admin":
           ]
           active_m_idx = datetime.now().month - 1
           selected_month_name = st.selectbox(
-              "Operating Month", options=months_list, index=active_m_idx
+              "Payroll Month", options=months_list, index=active_m_idx
           )
           selected_month_num = months_list.index(selected_month_name) + 1
         with p_col2:
@@ -891,7 +903,7 @@ if st.session_state.current_role == "Admin":
           st.write("")
           st.write("")
           include_ramazan = st.checkbox(
-              "Apply MVR 3,000 Ramazan Allowance (Legal Requirement)", value=False
+              "Apply MVR 3,000 Ramazan Allowance (Legal)", value=False
           )
 
         period_label = f"{selected_month_name} {selected_year}"
@@ -909,22 +921,22 @@ if st.session_state.current_role == "Admin":
           period_att = pd.DataFrame()
           yearly_att = pd.DataFrame()
 
-      st.write("") # Spacer
+      st.write("")
 
       with st.container(border=True):
-        st.markdown("#### 🛠️ Manual Financial Adjustments")
-        st.caption("Apply one-off salary advances or custom production bonuses for the selected period.")
+        st.markdown("#### 🛠️ Financial Adjustments & Advances")
+        st.caption("Configure mid-month salary advances or custom production bonuses for this cycle.")
 
         advances_dict = {}
         bonuses_dict = {}
 
         for idx, emp in staff_df.iterrows():
           emp_name = emp["Name"]
-          with st.expander(f"Financial Adjustments: {emp_name}"):
+          with st.expander(f"Adjustments for: {emp_name}"):
             adj_col1, adj_col2 = st.columns(2)
             with adj_col1:
               adv_val = st.number_input(
-                  f"Deduct Salary Advance (MVR)",
+                  f"Salary Advance Deduction (MVR)",
                   min_value=0.0,
                   value=0.0,
                   step=100.0,
@@ -932,7 +944,7 @@ if st.session_state.current_role == "Admin":
               )
             with adj_col2:
               bon_val = st.number_input(
-                  f"Add Custom Bonus/Allowance (MVR)",
+                  f"Production Bonus / Allowance (MVR)",
                   min_value=0.0,
                   value=0.0,
                   step=100.0,
@@ -941,7 +953,7 @@ if st.session_state.current_role == "Admin":
             advances_dict[emp_name] = adv_val
             bonuses_dict[emp_name] = bon_val
 
-      # --- Execute Payroll Calculations ---
+      # --- Execute Calculations ---
       payroll_list = []
       bml_transfer_list = []
 
@@ -990,7 +1002,6 @@ if st.session_state.current_role == "Admin":
             except (ValueError, TypeError):
               pass
 
-        # Fetch yearly totals to print on the payslip
         ann_used, sick_used, fam_used = 0, 0, 0
         if not yearly_att.empty:
           y_rec = yearly_att[yearly_att["Name"] == name]
@@ -1055,10 +1066,10 @@ if st.session_state.current_role == "Admin":
 
       payroll_df = pd.DataFrame(payroll_list)
 
-      st.write("") # Spacer
+      st.write("")
 
       with st.container(border=True):
-        st.markdown(f"#### 💰 Master Payroll Ledger: {period_label}")
+        st.markdown(f"#### 💰 Master Payroll Ledger — {period_label}")
         st.dataframe(
             payroll_df.style.format({
                 "Base Salary": "{:,.2f}",
@@ -1080,7 +1091,7 @@ if st.session_state.current_role == "Admin":
 
         st.divider()
         
-        st.markdown("##### 🏦 Bulk Bank Transfer Export")
+        st.markdown("##### 🏦 BML Bulk Transfer Export File")
         bml_df = pd.DataFrame(bml_transfer_list)
         bml_csv = bml_df.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -1091,10 +1102,10 @@ if st.session_state.current_role == "Admin":
             type="secondary",
         )
 
-      st.write("") # Spacer
+      st.write("")
 
       with st.container(border=True):
-        st.markdown("#### 📄 Payslip Document Generation")
+        st.markdown("#### 📄 Certified Payslip Generation")
         chosen_person = st.selectbox(
             "Select personnel to generate official payslip:",
             options=payroll_df["Name"].tolist(),
@@ -1102,19 +1113,18 @@ if st.session_state.current_role == "Admin":
 
         target = payroll_df[payroll_df["Name"] == chosen_person].iloc[0]
 
-        # Use bordered container for metrics to look like cards
         with st.container(border=True):
           c_met1, c_met2, c_met3, c_met4 = st.columns(4)
           c_met1.metric("Base Pay", f"MVR {target['Base Salary']:,.2f}")
           c_met2.metric(
-              "Total Additions",
+              "Additions",
               f"MVR {(target['OT Pay'] + target['Ramazan'] + target['Bonuses']):,.2f}",
           )
           c_met3.metric(
-              "Total Deductions",
+              "Deductions",
               f"MVR {(target['Absence Deduct'] + target['Advances'] + target['Pension (7%)']):,.2f}",
           )
-          c_met4.metric("Net Salary", f"MVR {target['Net Payout (MVR)']:,.2f}")
+          c_met4.metric("Net Payout", f"MVR {target['Net Payout (MVR)']:,.2f}")
 
         payslip_pdf = generate_payslip_bytes(
             emp_name=target["Name"],
