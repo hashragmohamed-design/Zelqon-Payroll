@@ -18,6 +18,14 @@ st.markdown("""
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
+        /* Aggressively hide all Streamlit Cloud developer UI elements and floating buttons */
+        [data-testid="stAppDeployButton"] {display: none !important;}
+        [data-testid="stToolbar"] {display: none !important;}
+        [data-testid="stDecoration"] {display: none !important;}
+        
+        /* Hide the bottom-right Streamlit watermark */
+        a[href^="https://streamlit.io/cloud"] {display: none !important;}
+        
         /* Adjust top padding since header is hidden */
         .block-container {
             padding-top: 2rem;
