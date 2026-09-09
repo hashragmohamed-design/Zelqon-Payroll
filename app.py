@@ -557,7 +557,7 @@ if st.session_state.current_role == "Admin":
       
       # ROLLING LOAN MANAGER
       with st.expander("💳 Manage Rolling Loans & Advances (Multi-Month)", expanded=False):
-        st.markdown("##### Issue New Loan")
+        st.markdown("##### ➕ Issue New Loan")
         with st.form("new_loan_form", clear_on_submit=True):
           l_c1, l_c2, l_c3 = st.columns(3)
           with l_c1: loan_emp = st.selectbox("Staff Member", options=staff_df["Name"])
@@ -572,25 +572,47 @@ if st.session_state.current_role == "Admin":
             st.success(f"Loan of MVR {loan_amt} issued to {loan_emp}.")
             st.rerun()
             
-        st.markdown("##### Active Loan Ledgers")
+        st.divider()
+        st.markdown("##### 📋 Active Loan Ledgers")
         if not adv_df.empty:
             active_loans = adv_df[adv_df["Remaining Balance (MVR)"] > 0]
             if not active_loans.empty:
                 st.dataframe(active_loans, use_container_width=True, hide_index=True)
                 st.info("💡 The system will automatically deduct the Monthly Installment during payroll processing below if a balance exists.")
                 
-                st.markdown("##### Commit Repayment")
-                st.caption("Clicking this manually deducts the installment from their remaining balance in the database after you have paid them.")
-                loan_to_pay = st.selectbox("Select Employee to Commit Repayment:", options=active_loans["Name"].tolist())
-                if st.button("Commit Monthly Deduction for Selected Employee", type="secondary"):
-                    idx_to_update = adv_df[adv_df["Name"] == loan_to_pay].index[-1]
-                    installment = float(adv_df.at[idx_to_update, "Monthly Installment (MVR)"])
-                    current_bal = float(adv_df.at[idx_to_update, "Remaining Balance (MVR)"])
-                    adv_df.at[idx_to_update, "Remaining Balance (MVR)"] = max(0.0, current_bal - installment)
-                    robust_update("Advances", data=adv_df)
-                    st.cache_data.clear()
-                    st.success(f"Deducted MVR {installment} from {loan_to_pay}'s loan balance.")
-                    st.rerun()
+                c_commit, c_void = st.columns(2)
+                
+                with c_commit:
+                    st.markdown("##### ✅ Commit Repayment")
+                    st.caption("Manually deduct the installment from the balance.")
+                    loan_to_pay = st.selectbox("Select Employee:", options=active_loans["Name"].tolist(), key="commit_loan")
+                    if st.button("Commit Deduction", type="secondary", use_container_width=True):
+                        idx_to_update = adv_df[adv_df["Name"] == loan_to_pay].index[-1]
+                        installment = float(adv_df.at[idx_to_update, "Monthly Installment (MVR)"])
+                        current_bal = float(adv_df.at[idx_to_update, "Remaining Balance (MVR)"])
+                        adv_df.at[idx_to_update, "Remaining Balance (MVR)"] = max(0.0, current_bal - installment)
+                        robust_update("Advances", data=adv_df)
+                        st.cache_data.clear()
+                        st.success(f"Deducted MVR {installment} from {loan_to_pay}'s loan balance.")
+                        st.rerun()
+                        
+                with c_void:
+                    st.markdown("##### 🗑️ Void Active Loan")
+                    st.caption("Mistake in issuing? Void the ledger entirely.")
+                    
+                    # Create a dictionary to map the display string back to the exact dataframe index
+                    loan_options = {f"{row['Name']} | Bal: MVR {row['Remaining Balance (MVR)']}": idx for idx, row in active_loans.iterrows()}
+                    
+                    loan_to_delete = st.selectbox("Select ledger to void:", options=list(loan_options.keys()), key="void_loan")
+                    if st.button("Void Ledger", type="secondary", use_container_width=True):
+                        row_to_drop = loan_options[loan_to_delete]
+                        remaining_adv = adv_df.drop(index=row_to_drop).reset_index(drop=True)
+                        if remaining_adv.empty: 
+                            remaining_adv = pd.DataFrame(columns=["Staff ID", "Name", "Total Loan (MVR)", "Monthly Installment (MVR)", "Remaining Balance (MVR)"])
+                        robust_update("Advances", data=remaining_adv)
+                        st.cache_data.clear()
+                        st.warning("Loan ledger voided and removed from database.")
+                        st.rerun()
             else:
                 st.info("No active loans.")
         else:
