@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Zelqon Foods | Enterprise Portal", page_icon="⚡", layout="wide"
 )
 
-# Elite SaaS CSS Injection (Imports Inter font & builds clean glassmorphic/card UI)
+# Elite SaaS CSS Injection (Mobile-Optimized & Clean UI)
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -20,12 +20,13 @@ st.markdown("""
             font-family: 'Inter', sans-serif !important;
         }
 
-        /* Hide Streamlit Branding & Toolbars */
+        /* Hide Streamlit Branding, Toolbars & Floating Table Menus */
         footer {visibility: hidden !important;}
         [data-testid="stToolbar"] {display: none !important;}
         [data-testid="stAppDeployButton"] {display: none !important;}
         [data-testid="stViewerBadge"] {display: none !important;}
         [data-testid="stHeader"] {background: transparent !important;}
+        [data-testid="stElementToolbar"] {display: none !important;}
 
         /* Executive Header Banner */
         .zelqon-hero {
@@ -498,7 +499,7 @@ with st.sidebar:
 
   with st.container():
     st.markdown(f"👤 **Operator:**<br>`{st.session_state.current_name}`", unsafe_allow_html=True)
-    st.markdown(f"🛡️ **Clearance:** `{st.session_state.current_role}`")
+    st.markdown(f"🛡️ **Access Level:** `{st.session_state.current_role}`")
     st.write("")
     if st.button("🚪 Secure Sign Out", use_container_width=True, type="secondary"):
       st.session_state.auth_status = False
@@ -556,41 +557,43 @@ with tab_att:
   if staff_df.empty or "Name" not in staff_df.columns:
     st.warning("⚠️ Database registry is empty. Please register personnel in the Workforce Directory first.")
   else:
+    # Replaced buggy expander with a clean enterprise card container
     with st.container():
-      with st.expander("⚡ Batch Action: Mark All Active Personnel 'Present'"):
-        batch_col1, batch_col2 = st.columns([2, 1])
-        with batch_col1:
-          batch_date = st.date_input(
-              "Select Attendance Date",
-              value=date.today(),
-              key="batch_att_date",
+      st.markdown("#### ⚡ Quick Batch Action")
+      st.caption("Instantly mark all active personnel as Present for a selected date.")
+      batch_col1, batch_col2 = st.columns([2, 1])
+      with batch_col1:
+        batch_date = st.date_input(
+            "Select Attendance Date",
+            value=date.today(),
+            key="batch_att_date",
+        )
+      with batch_col2:
+        st.write("")
+        st.write("")
+        if st.button("Commit Batch Present", type="primary", use_container_width=True):
+          current_att = load_attendance_data()
+          new_batch_rows = []
+          for _, emp in staff_df.iterrows():
+            new_batch_rows.append({
+                "Date": str(batch_date),
+                "Staff ID": emp["Staff ID"],
+                "Name": emp["Name"],
+                "Station": emp.get("Role", "Semi-Cooked Processing"),
+                "Status": "Present",
+                "Overtime Hours": 0.0,
+                "Notes": "Auto Batch Check-In",
+            })
+          batch_df = pd.DataFrame(new_batch_rows)
+          updated_att = (
+              pd.concat([current_att, batch_df], ignore_index=True)
+              if not current_att.empty
+              else batch_df
           )
-        with batch_col2:
-          st.write("")
-          st.write("")
-          if st.button("Commit Batch Present", type="primary", use_container_width=True):
-            current_att = load_attendance_data()
-            new_batch_rows = []
-            for _, emp in staff_df.iterrows():
-              new_batch_rows.append({
-                  "Date": str(batch_date),
-                  "Staff ID": emp["Staff ID"],
-                  "Name": emp["Name"],
-                  "Station": emp.get("Role", "Semi-Cooked Processing"),
-                  "Status": "Present",
-                  "Overtime Hours": 0.0,
-                  "Notes": "Auto Batch Check-In",
-              })
-            batch_df = pd.DataFrame(new_batch_rows)
-            updated_att = (
-                pd.concat([current_att, batch_df], ignore_index=True)
-                if not current_att.empty
-                else batch_df
-            )
-            conn.update(worksheet="Attendance", data=updated_att)
-            st.cache_data.clear()
-            st.success(f"Successfully recorded Present status for {len(staff_df)} staff members on {batch_date}.")
-            st.rerun()
+          conn.update(worksheet="Attendance", data=updated_att)
+          st.cache_data.clear()
+          st.success(f"Successfully recorded Present status for {len(staff_df)} staff members on {batch_date}.")
+          st.rerun()
 
     st.write("")
 
