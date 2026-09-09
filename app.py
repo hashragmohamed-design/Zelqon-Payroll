@@ -7,13 +7,20 @@ from streamlit_gsheets import GSheetsConnection
 
 # --- Page Configuration & Executive Styling ---
 st.set_page_config(
-    page_title="Zelqon Foods | Enterprise HR & Payroll", page_icon="🏢", layout="wide"
+    page_title="Zelqon Foods | Enterprise Portal", page_icon="⚡", layout="wide"
 )
 
-# Advanced Executive CSS
+# Elite SaaS CSS Injection (Imports Inter font & builds clean glassmorphic/card UI)
 st.markdown("""
     <style>
-        /* Hide default Streamlit developer clutter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* Global Font & Reset */
+        html, body, [class*="st-"] {
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        /* Hide Streamlit Branding & Toolbars */
         footer {visibility: hidden !important;}
         [data-testid="stToolbar"] {display: none !important;}
         [data-testid="stAppDeployButton"] {display: none !important;}
@@ -21,43 +28,71 @@ st.markdown("""
         [data-testid="stHeader"] {background: transparent !important;}
 
         /* Executive Header Banner */
-        .zelqon-banner {
-            background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
-            padding: 1.8rem 2rem;
-            border-radius: 12px;
+        .zelqon-hero {
+            background: linear-gradient(135deg, #0A0F1D 0%, #1E293B 100%);
+            padding: 2rem 2.5rem;
+            border-radius: 16px;
             color: white;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(10, 15, 29, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .zelqon-title {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 2.2rem;
+        .zelqon-hero-title {
+            font-size: 2.4rem;
             font-weight: 700;
             color: #FFFFFF;
-            margin: 0px;
-            letter-spacing: -0.5px;
+            margin: 0;
+            letter-spacing: -0.025em;
         }
-        .zelqon-subtitle {
-            font-size: 0.95rem;
+        .zelqon-hero-subtitle {
+            font-size: 0.9rem;
             color: #94A3B8;
-            margin-top: 4px;
-            margin-bottom: 0px;
-            font-weight: 400;
+            margin-top: 6px;
+            margin-bottom: 0;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.1em;
         }
 
-        /* Metric Widgets Styling */
+        /* Container Card Styling */
+        div.stContainer {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+            margin-bottom: 1rem;
+        }
+
+        /* Modern Metric Cards */
         div[data-testid="stMetric"] {
-            background-color: rgba(30, 58, 138, 0.03);
-            border: 1px solid rgba(30, 58, 138, 0.1);
-            padding: 15px;
-            border-radius: 8px;
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
         div[data-testid="stMetricValue"] {
-            font-size: 1.6rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            color: #1E3A8A;
+            color: #0F172A;
+        }
+
+        /* Button Polish */
+        .stButton > button {
+            border-radius: 8px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            transition: all 0.2s ease;
+        }
+        
+        /* Sidebar Refinement */
+        section[data-testid="stSidebar"] {
+            background-color: #0F172A;
+            color: #F8FAFC;
+        }
+        section[data-testid="stSidebar"] .stMarkdown {
+            color: #CBD5E1;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -107,17 +142,17 @@ if not st.session_state.auth_status:
   col_pad_left, col_login, col_pad_right = st.columns([1, 1.2, 1])
 
   with col_login:
-    with st.container(border=True):
-      st.markdown("<h2 style='text-align: center; color: #1E3A8A; margin-bottom: 0;'>ZELQON FOODS</h2>", unsafe_allow_html=True)
-      st.markdown("<p style='text-align: center; color: #64748B; margin-top: 0; font-size: 0.85rem; letter-spacing: 1px;'>SECURE ENTERPRISE PORTAL</p>", unsafe_allow_html=True)
+    with st.container():
+      st.markdown("<h2 style='text-align: center; color: #0F172A; font-weight: 700; margin-bottom: 0;'>ZELQON FOODS</h2>", unsafe_allow_html=True)
+      st.markdown("<p style='text-align: center; color: #64748B; margin-top: 4px; font-size: 0.8rem; letter-spacing: 0.15em; font-weight: 600;'>ENTERPRISE ACCESS GATEWAY</p>", unsafe_allow_html=True)
       st.divider()
       
       with st.form("zelqon_login_form"):
-        login_user = st.text_input("Username", placeholder="Enter administrator ID")
-        login_pass = st.text_input("Password", type="password", placeholder="Enter secure passphrase")
+        login_user = st.text_input("Username", placeholder="Enter account username")
+        login_pass = st.text_input("Password", type="password", placeholder="Enter secure password")
         st.write("")
         submit_login = st.form_submit_button(
-            "Authorize Access", type="primary", use_container_width=True
+            "Authenticate Session", type="primary", use_container_width=True
         )
 
         if submit_login:
@@ -129,9 +164,9 @@ if not st.session_state.auth_status:
             st.session_state.current_name = name
             st.rerun()
           else:
-            st.error("Access Denied: Invalid credentials provided.")
+            st.error("Access Denied: Unrecognized credentials.")
 
-  st.stop()  # Halts execution for unauthenticated users
+  st.stop()
 
 
 # =========================================================
@@ -234,7 +269,7 @@ class PayslipPDF(FPDF):
     self.cell(
         0,
         4,
-        "Fuvahmulah City, Republic of Maldives | Registration: Semi-Cooked Operations",
+        "Fuvahmulah City, Republic of Maldives | Semi-Cooked Operations Division",
         align="C",
         new_x="LMARGIN",
         new_y="NEXT",
@@ -257,7 +292,7 @@ class PayslipPDF(FPDF):
     self.cell(
         0,
         4,
-        "Maldives Employment Act & Pension Act Compliant Record | Generated by Zelqon HR",
+        "Maldives Employment Act & Pension Act Compliant Record | Generated by Zelqon Enterprise HR",
         align="C",
         new_x="LMARGIN",
         new_y="NEXT",
@@ -357,7 +392,6 @@ def generate_payslip_bytes(
   )
   pdf.ln(1)
   
-  # Leave Quota Tracker inside PDF
   pdf.set_font("Helvetica", "I", 8)
   pdf.cell(
       0,
@@ -428,7 +462,6 @@ def generate_payslip_bytes(
   pdf.cell(60, 7, f"MVR {net_pay:,.2f}", border=1, fill=True, align="R")
   pdf.ln(9)
 
-  # Pension Employer Note
   if pension_employer > 0:
     pdf.set_font("Helvetica", "I", 8)
     pdf.cell(
@@ -440,7 +473,6 @@ def generate_payslip_bytes(
     )
     pdf.ln(4)
 
-  # Signatures
   pdf.ln(10)
   pdf.set_font("Helvetica", "", 8)
   pdf.cell(90, 4, "___________________________________")
@@ -460,13 +492,13 @@ def generate_payslip_bytes(
 
 # --- Sidebar Setup ---
 with st.sidebar:
-  st.markdown("### 🏢 Zelqon Foods")
-  st.caption("Fuvahmulah Operations Hub")
+  st.markdown("### ⚡ Zelqon Foods")
+  st.caption("Fuvahmulah Enterprise Hub")
   st.divider()
 
-  with st.container(border=True):
-    st.markdown(f"👤 **Operator:**<br>{st.session_state.current_name}", unsafe_allow_html=True)
-    st.markdown(f"🛡️ **Access Level:** `{st.session_state.current_role}`")
+  with st.container():
+    st.markdown(f"👤 **Operator:**<br>`{st.session_state.current_name}`", unsafe_allow_html=True)
+    st.markdown(f"🛡️ **Clearance:** `{st.session_state.current_role}`")
     st.write("")
     if st.button("🚪 Secure Sign Out", use_container_width=True, type="secondary"):
       st.session_state.auth_status = False
@@ -477,7 +509,7 @@ with st.sidebar:
 
   if st.session_state.current_role == "Admin":
     st.divider()
-    st.markdown("#### 💾 Secure Data Exports")
+    st.markdown("#### 💾 Cloud Data Backups")
     staff_backup = load_staff_data()
     if not staff_backup.empty:
       st.download_button(
@@ -497,11 +529,11 @@ with st.sidebar:
           use_container_width=True,
       )
 
-# --- Executive Dashboard Header ---
+# --- Executive Dashboard Hero Banner ---
 st.markdown("""
-    <div class="zelqon-banner">
-        <p class="zelqon-title">Zelqon Foods HR Portal</p>
-        <p class="zelqon-subtitle">Fuvahmulah City, Republic of Maldives &bull; Semi-Cooked Operations</p>
+    <div class="zelqon-hero">
+        <p class="zelqon-hero-title">Zelqon Foods HR Portal</p>
+        <p class="zelqon-hero-subtitle">Fuvahmulah City, Maldives &bull; Semi-Cooked Operations Division</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -514,7 +546,7 @@ if st.session_state.current_role == "Admin":
   ])
 else:
   tab_att, = st.tabs(["🕒 Daily Attendance & Shifts"])
-  st.info("ℹ️ **Kitchen Staff Mode:** Daily attendance logging enabled. Administrative controls are secured.")
+  st.info("ℹ️ **Kitchen Staff Mode:** Daily attendance logging enabled. Administrative controls are securely locked.")
 
 # =========================================================
 # TAB 1: DAILY ATTENDANCE AND SHIFT LOGGING
@@ -524,7 +556,7 @@ with tab_att:
   if staff_df.empty or "Name" not in staff_df.columns:
     st.warning("⚠️ Database registry is empty. Please register personnel in the Workforce Directory first.")
   else:
-    with st.container(border=True):
+    with st.container():
       with st.expander("⚡ Batch Action: Mark All Active Personnel 'Present'"):
         batch_col1, batch_col2 = st.columns([2, 1])
         with batch_col1:
@@ -562,7 +594,7 @@ with tab_att:
 
     st.write("")
 
-    with st.container(border=True):
+    with st.container():
       st.markdown("#### 📝 Individual Shift Entry")
       st.caption("Record attendance status, station assignment, overtime hours, and shift notes.")
       with st.form("single_attendance_form", clear_on_submit=True):
@@ -637,7 +669,7 @@ with tab_att:
 
     st.write("")
 
-    with st.container(border=True):
+    with st.container():
       st.markdown("#### 🛠️ Shift Ledger Management")
       st.caption("Review recent logs and void erroneous entries from the cloud database.")
       att_records = load_attendance_data()
@@ -695,7 +727,7 @@ if st.session_state.current_role == "Admin":
     dir_col1, dir_col2 = st.columns([1, 1])
 
     with dir_col1:
-      with st.container(border=True):
+      with st.container():
         st.markdown("#### ➕ Register New Personnel")
         staff_df = load_staff_data()
 
@@ -769,7 +801,7 @@ if st.session_state.current_role == "Admin":
               st.rerun()
 
     with dir_col2:
-      with st.container(border=True):
+      with st.container():
         st.markdown("#### 📋 Active Personnel Directory")
         staff_df = load_staff_data()
         if not staff_df.empty:
@@ -810,7 +842,7 @@ if st.session_state.current_role == "Admin":
 # =========================================================
 if st.session_state.current_role == "Admin":
   with tab_leave:
-    with st.container(border=True):
+    with st.container():
       st.markdown("#### 📊 Employee Leave Quota Tracker")
       current_year = date.today().year
       st.caption(f"Live quota utilization against Maldives Employment Act standards for **{current_year}**.")
@@ -882,7 +914,7 @@ if st.session_state.current_role == "Admin":
     if staff_df.empty:
       st.info("Awaiting personnel registration to initialize payroll engine.")
     else:
-      with st.container(border=True):
+      with st.container():
         st.markdown("#### ⚙️ Payroll Calculation Parameters")
         p_col1, p_col2, p_col3 = st.columns(3)
         with p_col1:
@@ -923,7 +955,7 @@ if st.session_state.current_role == "Admin":
 
       st.write("")
 
-      with st.container(border=True):
+      with st.container():
         st.markdown("#### 🛠️ Financial Adjustments & Advances")
         st.caption("Configure mid-month salary advances or custom production bonuses for this cycle.")
 
@@ -1068,7 +1100,7 @@ if st.session_state.current_role == "Admin":
 
       st.write("")
 
-      with st.container(border=True):
+      with st.container():
         st.markdown(f"#### 💰 Master Payroll Ledger — {period_label}")
         st.dataframe(
             payroll_df.style.format({
@@ -1104,7 +1136,7 @@ if st.session_state.current_role == "Admin":
 
       st.write("")
 
-      with st.container(border=True):
+      with st.container():
         st.markdown("#### 📄 Certified Payslip Generation")
         chosen_person = st.selectbox(
             "Select personnel to generate official payslip:",
@@ -1113,7 +1145,7 @@ if st.session_state.current_role == "Admin":
 
         target = payroll_df[payroll_df["Name"] == chosen_person].iloc[0]
 
-        with st.container(border=True):
+        with st.container():
           c_met1, c_met2, c_met3, c_met4 = st.columns(4)
           c_met1.metric("Base Pay", f"MVR {target['Base Salary']:,.2f}")
           c_met2.metric(
