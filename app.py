@@ -166,7 +166,7 @@ def load_staff_data():
         "Name": "",
         "Role": "Semi-Cooked Processing",
         "Base Salary (MVR)": 4500.0,
-        "Standard Monthly Days": 26,
+        "Standard Monthly Days": 30,  # Updated to 30 days
         "Bank Account": "",
         "Pension Enrolled": "No",
     }
@@ -739,7 +739,7 @@ if st.session_state.current_role == "Admin":
               step=250.0,
           )
           new_days = st.number_input(
-              "Standard Work Days / Month", min_value=15, max_value=31, value=26
+              "Standard Work Days / Month", min_value=15, max_value=31, value=30 # Updated to 30 days
           )
           new_bank = st.text_input(
               "Bank Account Number (Optional)",
@@ -970,12 +970,19 @@ if st.session_state.current_role == "Admin":
         name = emp["Name"]
         staff_id = emp["Staff ID"]
         role = emp.get("Role", "Kitchen Operations")
-        bank_acc = emp.get("Bank Account", "")
+        
+        # Scrub pandas NaN values for Bank Accounts
+        bank_raw = emp.get("Bank Account", "")
+        if pd.isna(bank_raw) or str(bank_raw).strip().lower() in ["nan", "none", ""]:
+            bank_acc = ""
+        else:
+            bank_acc = str(bank_raw).strip()
+            
         base_sal = float(emp["Base Salary (MVR)"])
         std_days = (
             float(emp["Standard Monthly Days"])
             if emp["Standard Monthly Days"]
-            else 26.0
+            else 30.0 # Updated to 30 days fallback
         )
         is_pension = str(emp.get("Pension Enrolled", "No")).strip().lower() in [
             "yes",
@@ -988,7 +995,7 @@ if st.session_state.current_role == "Admin":
 
         present_count = 0.0
         leave_count = 0.0
-        absent_count = 0.0
+        manual_absent_count = 0.0
         ot_hours_total = 0.0
 
         if not period_att.empty:
@@ -999,18 +1006,22 @@ if st.session_state.current_role == "Admin":
               present_count += 1.0
             elif st_val == "Half Day":
               present_count += 0.5
-              absent_count += 0.5
+              manual_absent_count += 0.5
             elif st_val in ["Annual Leave", "Sick Leave", "Family Leave"]:
               leave_count += 1.0
               present_count += 1.0
             elif st_val == "Unexcused Absent":
-              absent_count += 1.0
+              manual_absent_count += 1.0
 
             try:
               ot_hours_total += float(row["Overtime Hours"])
             except (ValueError, TypeError):
               pass
 
+        # Auto-calculate unworked days to ensure proration
+        auto_absent_count = max(0.0, std_days - present_count)
+        final_absences = max(manual_absent_count, auto_absent_count)
+        
         ann_used, sick_used, fam_used = 0, 0, 0
         if not yearly_att.empty:
           y_rec = yearly_att[yearly_att["Name"] == name]
@@ -1023,7 +1034,7 @@ if st.session_state.current_role == "Admin":
         fam_bal = max(0, 10 - fam_used)
 
         ot_payout = ot_hours_total * hourly_rate * 1.25
-        absence_deduction = absent_count * daily_rate
+        absence_deduction = final_absences * daily_rate
 
         ramazan_amt = 3000.0 if include_ramazan else 0.0
         extra_allowance = bonuses_dict.get(name, 0.0)
@@ -1050,7 +1061,7 @@ if st.session_state.current_role == "Admin":
             "Base Salary": base_sal,
             "Present": present_count,
             "Leave Count": leave_count,
-            "Absences": absent_count,
+            "Absences": final_absences,
             "OT (Hrs)": ot_hours_total,
             "OT Pay": ot_payout,
             "Ramazan": ramazan_amt,
