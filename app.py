@@ -10,21 +10,31 @@ st.set_page_config(
     page_title="Zelqon HR & Payroll", page_icon="🏢", layout="wide"
 )
 
-# Custom Corporate CSS
+# Custom Corporate CSS - Aggressive Watermark Removal & Theming
 st.markdown("""
     <style>
-        /* Hide default Streamlit header, footer, and menu for a clean app feel */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
+        /* 1. Hide the default Streamlit header, footer, and main menu */
+        #MainMenu {visibility: hidden !important;}
+        footer {visibility: hidden !important;}
+        header {visibility: hidden !important;}
         
-        /* Aggressively hide all Streamlit Cloud developer UI elements and floating buttons */
+        /* 2. Hide the 'Deploy', 'Share', and 'GitHub' top-right buttons */
         [data-testid="stAppDeployButton"] {display: none !important;}
         [data-testid="stToolbar"] {display: none !important;}
-        [data-testid="stDecoration"] {display: none !important;}
+        [data-testid="stHeader"] {display: none !important;}
         
-        /* Hide the bottom-right Streamlit watermark */
-        a[href^="https://streamlit.io/cloud"] {display: none !important;}
+        /* 3. Aggressively target the "Hosted with Streamlit" bottom-right badge */
+        [data-testid="stViewerBadge"] {display: none !important;}
+        .viewerBadge_container__1CJvw {display: none !important;}
+        
+        /* 4. Catch-all for any floating Streamlit links */
+        a[title="Hosted with Streamlit"] {display: none !important;}
+        a[href*="streamlit.io"] {display: none !important;}
+        
+        /* 5. Force the main app background color */
+        .stApp {
+            background-color: #F4F7FA !important;
+        }
         
         /* Adjust top padding since header is hidden */
         .block-container {
